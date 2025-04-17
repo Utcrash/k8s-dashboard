@@ -170,11 +170,12 @@ const ConfigMapsPage: React.FC = () => {
 
       <Box
         mb="xl"
-        mt="lg"
+        mt={0}
         style={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
+          alignItems: 'flex-start',
+          paddingTop: 20,
         }}
       >
         <Title order={2}>ConfigMaps</Title>

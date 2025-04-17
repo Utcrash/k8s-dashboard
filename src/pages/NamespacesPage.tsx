@@ -64,6 +64,7 @@ const NamespacesPage: React.FC = () => {
           justifyContent: 'space-between',
           alignItems: 'center',
         }}
+        mt={20}
       >
         <Title order={2}>Namespaces</Title>
       </Box>

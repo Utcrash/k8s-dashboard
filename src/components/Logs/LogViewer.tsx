@@ -9,6 +9,7 @@ import {
   ActionIcon,
   Tooltip,
   ScrollArea,
+  Switch,
 } from '@mantine/core';
 import {
   IconFilter,
@@ -16,18 +17,23 @@ import {
   IconPlayerPause,
   IconPlayerPlay,
   IconX,
+  IconReload,
 } from '@tabler/icons-react';
 
 interface LogViewerProps {
   logs: string[];
   refreshLogs: () => void;
   isLoading?: boolean;
+  isStreaming?: boolean;
+  onStreamingToggle?: (enabled: boolean) => void;
 }
 
 const LogViewer: React.FC<LogViewerProps> = ({
   logs,
   refreshLogs,
   isLoading = false,
+  isStreaming = false,
+  onStreamingToggle,
 }) => {
   const [filter, setFilter] = useState('');
   const [isPaused, setIsPaused] = useState(false);
@@ -84,6 +90,13 @@ const LogViewer: React.FC<LogViewerProps> = ({
     setFilter('');
   };
 
+  // Toggle streaming mode
+  const handleStreamingToggle = () => {
+    if (onStreamingToggle) {
+      onStreamingToggle(!isStreaming);
+    }
+  };
+
   // Highlight matching text
   const highlightText = (text: string, query: string): React.ReactNode => {
     if (!query) return text;
@@ -123,11 +136,22 @@ const LogViewer: React.FC<LogViewerProps> = ({
           </Group>
 
           <Group>
+            {onStreamingToggle && (
+              <Switch
+                checked={isStreaming}
+                onChange={handleStreamingToggle}
+                size="xs"
+                label="Stream logs"
+                color="blue"
+              />
+            )}
+
             <Tooltip label={isPaused ? 'Resume logs' : 'Pause logs'}>
               <ActionIcon
                 onClick={togglePause}
                 color={isPaused ? 'red' : 'gray'}
                 variant="subtle"
+                disabled={isStreaming && !isPaused}
               >
                 {isPaused ? (
                   <IconPlayerPlay size="1.1rem" />
@@ -136,6 +160,19 @@ const LogViewer: React.FC<LogViewerProps> = ({
                 )}
               </ActionIcon>
             </Tooltip>
+
+            {!isStreaming && (
+              <Tooltip label="Refresh logs">
+                <ActionIcon
+                  onClick={refreshLogs}
+                  color="blue"
+                  variant="subtle"
+                  loading={isLoading}
+                >
+                  <IconReload size="1.1rem" />
+                </ActionIcon>
+              </Tooltip>
+            )}
 
             <Tooltip label="Scroll to bottom">
               <ActionIcon
@@ -183,7 +220,11 @@ const LogViewer: React.FC<LogViewerProps> = ({
             ))
           ) : (
             <Text ta="center" mt="md" c="dimmed">
-              {isLoading ? 'Loading logs...' : 'No logs available'}
+              {isLoading
+                ? 'Loading logs...'
+                : isStreaming && logs.length === 0
+                ? 'Waiting for logs...'
+                : 'No logs available'}
             </Text>
           )}
         </ScrollArea>

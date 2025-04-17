@@ -101,7 +101,11 @@ const PodList: React.FC<PodListProps> = ({
     (pod) =>
       pod.metadata.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       pod.metadata.namespace.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      pod.status.phase.toLowerCase().includes(searchTerm.toLowerCase())
+      pod.status.phase.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (pod.spec?.nodeName || '')
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (pod.status?.podIP || '').includes(searchTerm)
   );
 
   const handleEditYaml = async (pod: any) => {
@@ -196,13 +200,13 @@ const PodList: React.FC<PodListProps> = ({
       </Box>
 
       <TextInput
-        placeholder="Search pods..."
+        placeholder="Search pods by name, namespace, status, node, or IP..."
         size="sm"
         value={searchTerm}
         onChange={handleSearch}
         leftSection={<IconSearch size="1rem" />}
         mb="md"
-        style={{ maxWidth: 400 }}
+        style={{ maxWidth: 500 }}
       />
 
       <Paper withBorder>
@@ -212,6 +216,8 @@ const PodList: React.FC<PodListProps> = ({
               <Table.Th>Name</Table.Th>
               <Table.Th>Namespace</Table.Th>
               <Table.Th>Status</Table.Th>
+              <Table.Th>IP</Table.Th>
+              <Table.Th>Node</Table.Th>
               <Table.Th>Age</Table.Th>
               <Table.Th>Ready</Table.Th>
               <Table.Th>Restarts</Table.Th>
@@ -255,11 +261,34 @@ const PodList: React.FC<PodListProps> = ({
                   age = `${Math.floor(ageInSeconds / 86400)}d`;
                 }
 
+                // Get node name and pod IP
+                const nodeName = pod.spec?.nodeName || '<none>';
+                const podIP = pod.status?.podIP || '<none>';
+                const nominatedNodeName = pod.status?.nominatedNodeName || '';
+
                 return (
                   <Table.Tr key={pod.metadata.uid}>
                     <Table.Td>{pod.metadata.name}</Table.Td>
                     <Table.Td>{pod.metadata.namespace}</Table.Td>
                     <Table.Td>{getStatusBadge(pod.status.phase)}</Table.Td>
+                    <Table.Td>{podIP}</Table.Td>
+                    <Table.Td>
+                      {nodeName !== '<none>' ? (
+                        <Tooltip
+                          label={
+                            nominatedNodeName
+                              ? `Nominated: ${nominatedNodeName}`
+                              : undefined
+                          }
+                        >
+                          <Badge color="gray" variant="light" size="sm">
+                            {nodeName}
+                          </Badge>
+                        </Tooltip>
+                      ) : (
+                        '<none>'
+                      )}
+                    </Table.Td>
                     <Table.Td>{age}</Table.Td>
                     <Table.Td>{`${readyContainers}/${totalContainers}`}</Table.Td>
                     <Table.Td>{restarts}</Table.Td>

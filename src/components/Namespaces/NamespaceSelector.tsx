@@ -1,5 +1,5 @@
 import React from 'react';
-import { Select } from '@mantine/core';
+import { Select, Box } from '@mantine/core';
 
 interface NamespaceSelectorProps {
   namespaces: string[];
@@ -13,24 +13,26 @@ const NamespaceSelector: React.FC<NamespaceSelectorProps> = ({
   onNamespaceChange,
 }) => {
   return (
-    <Select
-      label="Namespace"
-      value={selectedNamespace}
-      onChange={(value) => value && onNamespaceChange(value)}
-      data={namespaces.map((namespace) => ({
-        value: namespace,
-        label: namespace,
-      }))}
-      miw={200}
-      size="sm"
-      comboboxProps={{ position: 'bottom', zIndex: 1050 }}
-      styles={{
-        dropdown: {
-          position: 'relative',
-          zIndex: 1050,
-        },
-      }}
-    />
+    <Box mt={10}>
+      <Select
+        label="Namespace"
+        value={selectedNamespace}
+        onChange={(value) => value && onNamespaceChange(value)}
+        data={namespaces.map((namespace) => ({
+          value: namespace,
+          label: namespace,
+        }))}
+        miw={200}
+        size="sm"
+        comboboxProps={{ position: 'bottom', zIndex: 1050 }}
+        styles={{
+          dropdown: {
+            position: 'relative',
+            zIndex: 1050,
+          },
+        }}
+      />
+    </Box>
   );
 };
 

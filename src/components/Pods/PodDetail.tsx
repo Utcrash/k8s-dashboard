@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Paper,
   Title,
@@ -14,7 +14,7 @@ import {
 } from '@mantine/core';
 import { IconRefresh } from '@tabler/icons-react';
 import LogViewer from '../Logs/LogViewer';
-import { getPodLogs } from '../../services/k8sService';
+import { getPodLogs, streamPodLogs } from '../../services/k8sService';
 
 interface PodDetailProps {
   pod: any;
@@ -26,6 +26,10 @@ const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace }) => {
   const [logs, setLogs] = useState<string[]>([]);
   const [selectedContainer, setSelectedContainer] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+
+  // Reference to store the cancel function for streaming
+  const streamingCancelRef = useRef<(() => void) | null>(null);
 
   const containers = pod?.spec?.containers || [];
 
@@ -37,8 +41,18 @@ const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace }) => {
 
   useEffect(() => {
     if (activeTab === 'logs' && selectedContainer) {
-      fetchLogs();
+      // If not streaming, fetch logs regularly
+      if (!isStreaming) {
+        fetchLogs();
+      }
     }
+  }, [activeTab, selectedContainer, isStreaming]);
+
+  // Cleanup streaming on unmount or when switching tabs/containers
+  useEffect(() => {
+    return () => {
+      cancelStreaming();
+    };
   }, [activeTab, selectedContainer]);
 
   const fetchLogs = async () => {
@@ -58,6 +72,54 @@ const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace }) => {
       setLogs(['Error fetching logs. Please try again.']);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const startStreaming = () => {
+    if (!pod?.metadata?.name || !selectedContainer) return;
+
+    // Cancel any existing stream first
+    cancelStreaming();
+
+    // Clear logs before starting streaming
+    setLogs([]);
+
+    // Start the new stream
+    const cancelStream = streamPodLogs(
+      pod.metadata.name,
+      namespace,
+      (logChunk: string) => {
+        // Add new log chunk to the logs array
+        setLogs((prev) => [...prev, logChunk]);
+      },
+      (error: Error) => {
+        console.error('Streaming error:', error);
+        setLogs((prev) => [...prev, `Error: ${error.message}`]);
+        setIsStreaming(false);
+      },
+      selectedContainer
+    );
+
+    // Store cancel function
+    streamingCancelRef.current = cancelStream;
+  };
+
+  const cancelStreaming = () => {
+    if (streamingCancelRef.current) {
+      streamingCancelRef.current();
+      streamingCancelRef.current = null;
+    }
+  };
+
+  const handleStreamingToggle = (enabled: boolean) => {
+    setIsStreaming(enabled);
+
+    if (enabled) {
+      startStreaming();
+    } else {
+      cancelStreaming();
+      // Fetch logs once when disabling streaming
+      fetchLogs();
     }
   };
 
@@ -95,6 +157,18 @@ const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace }) => {
               </Text>
               <Text size="sm">{pod.status.phase}</Text>
             </Box>
+            <Box>
+              <Text fw={600} size="sm">
+                Node:
+              </Text>
+              <Text size="sm">{pod.spec?.nodeName || 'Unknown'}</Text>
+            </Box>
+            <Box>
+              <Text fw={600} size="sm">
+                IP:
+              </Text>
+              <Text size="sm">{pod.status?.podIP || 'Not assigned'}</Text>
+            </Box>
           </Stack>
         </Grid.Col>
         <Grid.Col span={{ base: 12, md: 6 }}>
@@ -128,7 +202,17 @@ const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace }) => {
             label="Container"
             placeholder="Select container"
             value={selectedContainer}
-            onChange={(value) => value && setSelectedContainer(value)}
+            onChange={(value) => {
+              // Cancel streaming if active
+              if (isStreaming) {
+                cancelStreaming();
+                setIsStreaming(false);
+              }
+
+              if (value) {
+                setSelectedContainer(value);
+              }
+            }}
             data={containers.map((container: any) => ({
               value: container.name,
               label: container.name,
@@ -142,11 +226,18 @@ const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace }) => {
             onClick={fetchLogs}
             loading={isLoading}
             size="sm"
+            disabled={isStreaming}
           >
             Refresh
           </Button>
         </Group>
-        <LogViewer logs={logs} refreshLogs={fetchLogs} isLoading={isLoading} />
+        <LogViewer
+          logs={logs}
+          refreshLogs={fetchLogs}
+          isLoading={isLoading}
+          isStreaming={isStreaming}
+          onStreamingToggle={handleStreamingToggle}
+        />
       </>
     );
   };
@@ -163,7 +254,17 @@ const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace }) => {
 
       <Tabs
         value={activeTab}
-        onChange={(value) => value && setActiveTab(value)}
+        onChange={(value) => {
+          // Cancel streaming when switching tabs
+          if (isStreaming && value !== 'logs') {
+            cancelStreaming();
+            setIsStreaming(false);
+          }
+
+          if (value) {
+            setActiveTab(value);
+          }
+        }}
       >
         <Tabs.List>
           <Tabs.Tab value="details">Details</Tabs.Tab>
