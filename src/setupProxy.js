@@ -3,7 +3,7 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 module.exports = function (app) {
     // Proxy API requests to the Kubernetes API server
     app.use(
-        ['/k8s-api/api', '/k8s-api/apis'],
+        '/k8s-api',
         createProxyMiddleware({
             target: process.env.REACT_APP_K8S_API_URL || 'http://localhost:8001',
             changeOrigin: true,

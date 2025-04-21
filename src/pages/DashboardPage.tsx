@@ -22,6 +22,9 @@ import {
   Tooltip,
   Progress,
   RingProgress,
+  Button,
+  Center,
+  Alert,
 } from '@mantine/core';
 import { Link } from 'react-router-dom';
 import {
@@ -37,6 +40,8 @@ import {
   IconCpu,
   IconDeviceDesktopAnalytics,
   IconDatabase,
+  IconRefresh,
+  IconAlertCircle,
 } from '@tabler/icons-react';
 import NamespaceSelector from '../components/Namespaces/NamespaceSelector';
 import {
@@ -134,6 +139,7 @@ const DashboardPage: React.FC = () => {
   const [isMetricsLoading, setIsMetricsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [metricsError, setMetricsError] = useState<string | null>(null);
+  const [nodeMetrics, setNodeMetrics] = useState<NodeMetrics[]>([]);
 
   // Fetch namespaces on initial load
   useEffect(() => {
@@ -159,64 +165,15 @@ const DashboardPage: React.FC = () => {
 
   const fetchClusterMetrics = async () => {
     setIsMetricsLoading(true);
-    setMetricsError(null);
     try {
-      // Get all nodes and their metrics
-      const [nodeMetricsResponse, nodesResponse] = await Promise.all([
-        getNodeMetrics(),
-        getNodes(),
-      ]);
-
-      const nodeMetrics = nodeMetricsResponse.items || [];
-      const nodes = nodesResponse.items || [];
-
-      // Map nodes with their metrics
-      const metricsData: NodeMetrics[] = nodes.map((node: any) => {
-        const nodeMetric =
-          nodeMetrics.find(
-            (metric: any) => metric.metadata.name === node.metadata.name
-          ) || null;
-
-        // Get node capacity
-        const cpuCapacity = parseCpuValue(node.status.capacity.cpu);
-        const memoryCapacity = parseMemoryValue(node.status.capacity.memory);
-
-        // Get current usage (if metrics are available)
-        let cpuUsage = 0;
-        let memoryUsage = 0;
-
-        if (nodeMetric && nodeMetric.usage) {
-          cpuUsage = parseCpuValue(nodeMetric.usage.cpu);
-          memoryUsage = parseMemoryValue(nodeMetric.usage.memory);
-        }
-
-        // Calculate percentages
-        const cpuPercentage =
-          cpuCapacity > 0 ? Math.min(100, (cpuUsage / cpuCapacity) * 100) : 0;
-        const memoryPercentage =
-          memoryCapacity > 0
-            ? Math.min(100, (memoryUsage / memoryCapacity) * 100)
-            : 0;
-
-        return {
-          name: node.metadata.name,
-          cpu: {
-            usage: cpuUsage,
-            capacity: cpuCapacity,
-            percentage: cpuPercentage,
-          },
-          memory: {
-            usage: memoryUsage,
-            capacity: memoryCapacity,
-            percentage: memoryPercentage,
-          },
-        };
-      });
-
-      setClusterMetrics(metricsData);
-    } catch (err) {
-      console.error('Error fetching cluster metrics:', err);
-      setMetricsError('Failed to fetch cluster metrics');
+      const result = await getNodeMetrics();
+      setNodeMetrics(result.items || []);
+      setMetricsError(null);
+    } catch (error) {
+      console.error('Failed to fetch node metrics', error);
+      setMetricsError(
+        'Failed to fetch metrics. Please ensure metrics-server is installed.'
+      );
     } finally {
       setIsMetricsLoading(false);
     }
@@ -440,7 +397,7 @@ const DashboardPage: React.FC = () => {
       )}
 
       <Grid gutter="xl" mb="xl">
-        {/* Cluster Metrics */}
+        {/* Cluster Metrics - kubectl top node style */}
         <Grid.Col span={12}>
           <Card withBorder shadow="sm" radius="md">
             <Card.Section
@@ -451,114 +408,207 @@ const DashboardPage: React.FC = () => {
               }}
             >
               <Group justify="apart">
-                <Title order={4}>Cluster Metrics</Title>
-                <Badge color="indigo" variant="light">
-                  System
-                </Badge>
+                <Group>
+                  <Title order={4}>Node Utilization</Title>
+                  <Text size="sm" c="dimmed" style={{ marginLeft: '8px' }}>
+                    (kubectl top node)
+                  </Text>
+                </Group>
+                <Button
+                  variant="light"
+                  size="xs"
+                  leftSection={<IconRefresh size="0.9rem" />}
+                  onClick={fetchClusterMetrics}
+                  loading={isMetricsLoading}
+                >
+                  Refresh
+                </Button>
               </Group>
             </Card.Section>
             <Card.Section p="lg">
               {isMetricsLoading ? (
-                <Flex justify="center" align="center" h={150}>
-                  <Loader size="sm" />
-                </Flex>
+                <Center p="xl">
+                  <Loader />
+                </Center>
               ) : metricsError ? (
-                <Paper
-                  p="md"
-                  radius="sm"
-                  style={{
-                    backgroundColor: '#fff4e5',
-                    borderLeft: '4px solid #ffab40',
-                  }}
+                <Alert
+                  icon={<IconAlertCircle size={16} />}
+                  title="Metrics Unavailable"
+                  color="orange"
+                  mt="md"
                 >
-                  <Text c="orange" fw={500} size="sm">
-                    {metricsError}
-                  </Text>
-                </Paper>
+                  {metricsError}
+                  <Button
+                    variant="light"
+                    size="xs"
+                    mt="xs"
+                    onClick={() =>
+                      window.open(
+                        'https://github.com/kubernetes-sigs/metrics-server',
+                        '_blank'
+                      )
+                    }
+                  >
+                    Install Metrics Server
+                  </Button>
+                </Alert>
+              ) : nodeMetrics.length === 0 ? (
+                <Alert
+                  icon={<IconAlertCircle size={16} />}
+                  title="No Metrics Available"
+                  color="blue"
+                  mt="md"
+                >
+                  No metrics data available. Please ensure metrics-server is
+                  installed and running in your cluster.
+                  <Button
+                    variant="light"
+                    size="xs"
+                    mt="xs"
+                    onClick={() =>
+                      window.open(
+                        'https://github.com/kubernetes-sigs/metrics-server',
+                        '_blank'
+                      )
+                    }
+                  >
+                    Install Metrics Server
+                  </Button>
+                </Alert>
               ) : (
-                <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
-                  {clusterMetrics.map((node) => (
-                    <Paper key={node.name} withBorder p="md" radius="md">
-                      <Title order={5} mb="sm">
-                        {node.name}
-                      </Title>
-                      <Group justify="apart" mb="md">
-                        <Group>
-                          <ThemeIcon color="blue" size="lg" radius="xl">
-                            <IconCpu size="1.3rem" />
-                          </ThemeIcon>
-                          <Box>
-                            <Text size="xs" c="dimmed">
-                              CPU Usage
-                            </Text>
-                            <Text size="sm" fw={500}>
-                              {(node.cpu.usage / 1000).toFixed(2)} /{' '}
-                              {(node.cpu.capacity / 1000).toFixed(2)} cores
-                            </Text>
-                          </Box>
-                        </Group>
-                        <RingProgress
-                          size={60}
-                          thickness={4}
-                          roundCaps
-                          sections={[
-                            {
-                              value: node.cpu.percentage,
-                              color:
-                                node.cpu.percentage > 90
-                                  ? 'red'
-                                  : node.cpu.percentage > 70
-                                  ? 'orange'
-                                  : 'blue',
-                            },
-                          ]}
-                          label={
-                            <Text size="xs" ta="center" fw={700}>
-                              {Math.round(node.cpu.percentage)}%
-                            </Text>
+                <Box>
+                  <Box
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns:
+                        'minmax(200px, 1fr) repeat(4, minmax(100px, 1fr))',
+                      borderBottom: '1px solid #eee',
+                      padding: '0 0 10px 0',
+                      marginBottom: '10px',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    <Text fw={700} size="sm">
+                      NODE
+                    </Text>
+                    <Text fw={700} size="sm" ta="right">
+                      CPU (cores)
+                    </Text>
+                    <Text fw={700} size="sm" ta="right">
+                      CPU%
+                    </Text>
+                    <Text fw={700} size="sm" ta="right">
+                      MEMORY
+                    </Text>
+                    <Text fw={700} size="sm" ta="right">
+                      MEMORY%
+                    </Text>
+                  </Box>
+                  {nodeMetrics.map((node) => (
+                    <Box key={node.name} mb="xl">
+                      <Box
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns:
+                            'minmax(200px, 1fr) repeat(4, minmax(100px, 1fr))',
+                          padding: '8px 0',
+                        }}
+                      >
+                        <Text fw={500} size="sm" truncate>
+                          {node.name}
+                        </Text>
+                        <Text size="sm" ta="right">
+                          {(node.cpu.usage / 1000).toFixed(2)}
+                        </Text>
+                        <Text
+                          size="sm"
+                          ta="right"
+                          c={
+                            node.cpu.percentage > 90
+                              ? 'red'
+                              : node.cpu.percentage > 70
+                              ? 'orange'
+                              : 'inherit'
                           }
-                        />
-                      </Group>
-                      <Group justify="apart">
-                        <Group>
-                          <ThemeIcon color="green" size="lg" radius="xl">
-                            <IconDatabase size="1.3rem" />
-                          </ThemeIcon>
-                          <Box>
-                            <Text size="xs" c="dimmed">
-                              Memory Usage
-                            </Text>
-                            <Text size="sm" fw={500}>
-                              {formatMemory(node.memory.usage)} /{' '}
-                              {formatMemory(node.memory.capacity)}
-                            </Text>
-                          </Box>
-                        </Group>
-                        <RingProgress
-                          size={60}
-                          thickness={4}
-                          roundCaps
-                          sections={[
-                            {
-                              value: node.memory.percentage,
-                              color:
-                                node.memory.percentage > 90
-                                  ? 'red'
-                                  : node.memory.percentage > 70
-                                  ? 'orange'
-                                  : 'green',
-                            },
-                          ]}
-                          label={
-                            <Text size="xs" ta="center" fw={700}>
-                              {Math.round(node.memory.percentage)}%
-                            </Text>
+                          fw={node.cpu.percentage > 70 ? 600 : 400}
+                        >
+                          {Math.round(node.cpu.percentage)}%
+                        </Text>
+                        <Text size="sm" ta="right">
+                          {formatMemory(node.memory.usage)}
+                        </Text>
+                        <Text
+                          size="sm"
+                          ta="right"
+                          c={
+                            node.memory.percentage > 90
+                              ? 'red'
+                              : node.memory.percentage > 70
+                              ? 'orange'
+                              : 'inherit'
                           }
+                          fw={node.memory.percentage > 70 ? 600 : 400}
+                        >
+                          {Math.round(node.memory.percentage)}%
+                        </Text>
+                      </Box>
+
+                      {/* CPU Bar */}
+                      <Box mb="sm">
+                        <Group justify="space-between" mb={5}>
+                          <Text size="xs" c="dimmed">
+                            CPU
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            {(node.cpu.usage / 1000).toFixed(2)} /{' '}
+                            {(node.cpu.capacity / 1000).toFixed(2)} cores
+                          </Text>
+                        </Group>
+                        <Progress
+                          value={node.cpu.percentage}
+                          color={
+                            node.cpu.percentage > 90
+                              ? 'red'
+                              : node.cpu.percentage > 70
+                              ? 'orange'
+                              : 'blue'
+                          }
+                          size="md"
+                          radius="xs"
+                          striped={node.cpu.percentage > 80}
+                          animated={node.cpu.percentage > 80}
                         />
-                      </Group>
-                    </Paper>
+                      </Box>
+
+                      {/* Memory Bar */}
+                      <Box>
+                        <Group justify="space-between" mb={5}>
+                          <Text size="xs" c="dimmed">
+                            Memory
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            {formatMemory(node.memory.usage)} /{' '}
+                            {formatMemory(node.memory.capacity)}
+                          </Text>
+                        </Group>
+                        <Progress
+                          value={node.memory.percentage}
+                          color={
+                            node.memory.percentage > 90
+                              ? 'red'
+                              : node.memory.percentage > 70
+                              ? 'orange'
+                              : 'green'
+                          }
+                          size="md"
+                          radius="xs"
+                          striped={node.memory.percentage > 80}
+                          animated={node.memory.percentage > 80}
+                        />
+                      </Box>
+                    </Box>
                   ))}
-                </SimpleGrid>
+                </Box>
               )}
             </Card.Section>
           </Card>

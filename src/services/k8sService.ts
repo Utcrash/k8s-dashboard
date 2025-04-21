@@ -331,13 +331,30 @@ export const getNode = async (name: string) => {
     return response.data;
 };
 
-export const getNodeMetrics = async (name?: string) => {
-    if (name) {
-        const response = await api.get(`/apis/metrics.k8s.io/v1beta1/nodes/${name}`);
-        return response.data;
-    } else {
-        const response = await api.get('/apis/metrics.k8s.io/v1beta1/nodes');
-        return response.data;
+export const getNodeMetrics = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/apis/metrics.k8s.io/v1beta1/nodes`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                ...addAuthToken({}),
+            },
+        });
+
+        if (!response.ok) {
+            // If we get a 404, the metrics API is probably not installed
+            if (response.status === 404) {
+                console.warn('Metrics API not available (404). Metrics-server may not be installed.');
+                return { items: [] };
+            }
+            throw new Error(`Failed to fetch node metrics: ${response.statusText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching node metrics:', error);
+        // Return empty array rather than throwing to avoid breaking the UI
+        return { items: [] };
     }
 };
 
