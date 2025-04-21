@@ -140,6 +140,8 @@ const DashboardPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [metricsError, setMetricsError] = useState<string | null>(null);
   const [nodeMetrics, setNodeMetrics] = useState<NodeMetrics[]>([]);
+  const [rawMetricsResponse, setRawMetricsResponse] = useState<string>('');
+  const [showRawMetrics, setShowRawMetrics] = useState(false);
 
   // Fetch namespaces on initial load
   useEffect(() => {
@@ -360,6 +362,62 @@ const DashboardPage: React.FC = () => {
     }
   };
 
+  // Add a helper function to test the metrics connection directly
+  const testMetricsApiConnection = async () => {
+    setIsMetricsLoading(true);
+    try {
+      console.log('Testing metrics API connection...');
+      // Make a direct fetch request to test the connection
+      const response = await fetch(
+        `/k8s-api/apis/metrics.k8s.io/v1beta1/nodes`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            // Add auth token if available
+            ...(localStorage.getItem('k8s_auth_token')
+              ? {
+                  Authorization: `Bearer ${localStorage.getItem(
+                    'k8s_auth_token'
+                  )}`,
+                }
+              : {}),
+          },
+        }
+      );
+
+      console.log(
+        'Test API response status:',
+        response.status,
+        response.statusText
+      );
+
+      // Get response as text so we can see any error messages
+      const responseText = await response.text();
+      setRawMetricsResponse(responseText);
+
+      // If it's valid JSON, try to parse it
+      try {
+        const jsonResponse = JSON.parse(responseText);
+        console.log('Parsed response:', jsonResponse);
+        if (jsonResponse.items && jsonResponse.items.length > 0) {
+          console.log(`Found ${jsonResponse.items.length} node metrics items`);
+        } else {
+          console.log('No metrics items found in response');
+        }
+      } catch (e) {
+        console.error('Response is not valid JSON:', e);
+      }
+    } catch (error) {
+      console.error('Test metrics API connection error:', error);
+      setRawMetricsResponse(
+        `Error: ${error instanceof Error ? error.message : String(error)}`
+      );
+    } finally {
+      setIsMetricsLoading(false);
+    }
+  };
+
   return (
     <Container size="xl" p="md">
       <Paper p="md" withBorder radius="md" shadow="sm" mb="xl">
@@ -414,18 +472,69 @@ const DashboardPage: React.FC = () => {
                     (kubectl top node)
                   </Text>
                 </Group>
-                <Button
-                  variant="light"
-                  size="xs"
-                  leftSection={<IconRefresh size="0.9rem" />}
-                  onClick={fetchClusterMetrics}
-                  loading={isMetricsLoading}
-                >
-                  Refresh
-                </Button>
+                <Group>
+                  <Button
+                    variant="subtle"
+                    leftSection={<IconDeviceDesktopAnalytics size={16} />}
+                    onClick={() => {
+                      testMetricsApiConnection();
+                      setShowRawMetrics(!showRawMetrics);
+                    }}
+                    size="xs"
+                  >
+                    {showRawMetrics ? 'Hide Debug Info' : 'Debug API'}
+                  </Button>
+                  <Button
+                    variant="light"
+                    leftSection={<IconRefresh size={16} />}
+                    onClick={fetchClusterMetrics}
+                    loading={isMetricsLoading}
+                  >
+                    Refresh
+                  </Button>
+                </Group>
               </Group>
             </Card.Section>
             <Card.Section p="lg">
+              {/* Debug panel for raw metrics response */}
+              {showRawMetrics && (
+                <Paper
+                  withBorder
+                  p="xs"
+                  mt="md"
+                  style={{ backgroundColor: '#f8f9fa' }}
+                >
+                  <Text size="xs" fw={700}>
+                    Debug Information:
+                  </Text>
+                  <Text size="xs">
+                    API URL: /k8s-api/apis/metrics.k8s.io/v1beta1/nodes
+                  </Text>
+                  <Text size="xs" mb="xs">
+                    Response:
+                  </Text>
+                  <div
+                    style={{
+                      maxHeight: '200px',
+                      overflow: 'auto',
+                      padding: '8px',
+                      backgroundColor: '#2a2a2a',
+                      borderRadius: '4px',
+                      fontFamily: 'monospace',
+                    }}
+                  >
+                    <Text
+                      size="xs"
+                      ff="monospace"
+                      style={{ whiteSpace: 'pre-wrap', color: '#ffffff' }}
+                    >
+                      {rawMetricsResponse ||
+                        'No response yet. Click "Debug API" to test.'}
+                    </Text>
+                  </div>
+                </Paper>
+              )}
+
               {isMetricsLoading ? (
                 <Center p="xl">
                   <Loader />
