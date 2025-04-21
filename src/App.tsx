@@ -7,10 +7,12 @@ import {
 } from 'react-router-dom';
 import { MantineProvider, createTheme, ColorSchemeScript } from '@mantine/core';
 import '@mantine/core/styles.css';
+import { ModalsProvider } from '@mantine/modals';
+import { Notifications } from '@mantine/notifications';
+import '@mantine/notifications/styles.css';
 import Layout from './components/Layout/Layout';
 import DashboardPage from './pages/DashboardPage';
 import PodsPage from './pages/PodsPage';
-import PodDetailPage from './pages/PodDetailPage';
 import ServicesPage from './pages/ServicesPage';
 import NamespacesPage from './pages/NamespacesPage';
 import ConfigMapsPage from './pages/ConfigMapsPage';
@@ -19,6 +21,7 @@ import DeploymentsPage from './pages/DeploymentsPage';
 import TokenPage from './pages/TokenPage';
 import SecretsPage from './pages/SecretsPage';
 import { NamespaceProvider } from './context/NamespaceContext';
+import ScaleDeploymentModal from './components/Deployments/ScaleDeploymentModal';
 import './App.css';
 
 // Create a theme
@@ -57,41 +60,42 @@ const theme = createTheme({
 // Get the base URL from the environment or default to /k8s
 const BASE_URL = '/k8s';
 
+// Define modals
+const modals = {
+  // Register the scale deployment modal
+  scaleDeployment: ScaleDeploymentModal,
+};
+
 function App() {
   return (
     <>
       <ColorSchemeScript />
       <MantineProvider theme={theme} defaultColorScheme="light">
-        <NamespaceProvider>
-          <Router basename={BASE_URL}>
-            <Layout>
-              <Routes>
-                <Route path="/" element={<DashboardPage />} />
-                <Route path="/pods" element={<PodsPage />} />
-                <Route
-                  path="/pods/:namespace/:name"
-                  element={<PodDetailPage />}
-                />
-                <Route
-                  path="/pods/:namespace/:name/:tab"
-                  element={<PodDetailPage />}
-                />
-                <Route path="/services" element={<ServicesPage />} />
-                <Route path="/namespaces" element={<NamespacesPage />} />
-                <Route path="/configmaps" element={<ConfigMapsPage />} />
-                <Route
-                  path="/serviceaccounts"
-                  element={<ServiceAccountsPage />}
-                />
-                <Route path="/deployments" element={<DeploymentsPage />} />
-                <Route path="/token" element={<TokenPage />} />
-                <Route path="/secrets" element={<SecretsPage />} />
-                {/* Redirect any unmatched routes to the dashboard */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </Layout>
-          </Router>
-        </NamespaceProvider>
+        <Notifications />
+        <ModalsProvider modals={modals}>
+          <NamespaceProvider>
+            <Router basename={BASE_URL}>
+              <Layout>
+                <Routes>
+                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/pods" element={<PodsPage />} />
+                  <Route path="/services" element={<ServicesPage />} />
+                  <Route path="/namespaces" element={<NamespacesPage />} />
+                  <Route path="/configmaps" element={<ConfigMapsPage />} />
+                  <Route
+                    path="/serviceaccounts"
+                    element={<ServiceAccountsPage />}
+                  />
+                  <Route path="/deployments" element={<DeploymentsPage />} />
+                  <Route path="/token" element={<TokenPage />} />
+                  <Route path="/secrets" element={<SecretsPage />} />
+                  {/* Redirect any unmatched routes to the dashboard */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Layout>
+            </Router>
+          </NamespaceProvider>
+        </ModalsProvider>
       </MantineProvider>
     </>
   );

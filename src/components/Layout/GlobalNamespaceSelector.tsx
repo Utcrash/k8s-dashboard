@@ -1,5 +1,5 @@
 import React from 'react';
-import { Select, Box, Text, Group, Badge } from '@mantine/core';
+import { Select, Box, Text, Group } from '@mantine/core';
 import { useNamespace } from '../../context/NamespaceContext';
 
 const GlobalNamespaceSelector: React.FC = () => {
@@ -27,16 +27,6 @@ const GlobalNamespaceSelector: React.FC = () => {
         w={180}
         searchable
         nothingFoundMessage="No namespaces found"
-        rightSection={
-          <Badge
-            size="xs"
-            variant="filled"
-            color="blue"
-            style={{ opacity: 0.7 }}
-          >
-            {availableNamespaces.length}
-          </Badge>
-        }
         comboboxProps={{
           position: 'bottom-start',
           offset: 5,
@@ -62,9 +52,6 @@ const GlobalNamespaceSelector: React.FC = () => {
             '&[data-selected]': {
               backgroundColor: theme.colors.blue[5],
             },
-          },
-          rightSection: {
-            pointerEvents: 'none',
           },
         })}
         disabled={isLoading}
