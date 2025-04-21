@@ -18,7 +18,9 @@ const NamespaceContext = createContext<NamespaceContextType | undefined>(
 export const NamespaceProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [globalNamespace, setGlobalNamespace] = useState<string>('default');
+  const [globalNamespace, setGlobalNamespace] = useState<string>(
+    process.env.K8S_NAMESPACE || 'default'
+  );
   const [availableNamespaces, setAvailableNamespaces] = useState<string[]>([
     'default',
   ]);
