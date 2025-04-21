@@ -15,6 +15,7 @@ import {
   Menu,
   rem,
   Tooltip,
+  Checkbox,
 } from '@mantine/core';
 import {
   IconSearch,
@@ -36,11 +37,13 @@ import {
 } from '../services/k8sService';
 import YamlEditor from '../components/Common/YamlEditor';
 import ConfirmationModal from '../components/Common/ConfirmationModal';
+import { useNamespace } from '../context/NamespaceContext';
 
 const DeploymentsPage: React.FC = () => {
+  const { globalNamespace, useGlobalNamespace } = useNamespace();
+
   const [deployments, setDeployments] = useState<any[]>([]);
-  const [namespaces, setNamespaces] = useState<string[]>(['default']);
-  const [selectedNamespace, setSelectedNamespace] = useState('default');
+  const [selectedNamespace, setSelectedNamespace] = useState(globalNamespace);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,26 +61,17 @@ const DeploymentsPage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [deploymentYaml, setDeploymentYaml] = useState<any>(null);
 
-  // Fetch namespaces on initial load
+  // Update selected namespace when global namespace changes if using global
   useEffect(() => {
-    fetchNamespaces();
-  }, []);
+    if (useGlobalNamespace) {
+      setSelectedNamespace(globalNamespace);
+    }
+  }, [globalNamespace, useGlobalNamespace]);
 
   // Fetch deployments when selected namespace changes
   useEffect(() => {
     fetchDeployments();
   }, [selectedNamespace]);
-
-  const fetchNamespaces = async () => {
-    try {
-      const response = await getNamespaces();
-      const namespaceNames = response.items.map((ns: any) => ns.metadata.name);
-      setNamespaces(namespaceNames);
-    } catch (err) {
-      console.error('Error fetching namespaces:', err);
-      setError('Failed to fetch namespaces');
-    }
-  };
 
   const fetchDeployments = async () => {
     setIsLoading(true);
@@ -92,10 +86,6 @@ const DeploymentsPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleNamespaceChange = (namespace: string) => {
-    setSelectedNamespace(namespace);
   };
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -183,30 +173,12 @@ const DeploymentsPage: React.FC = () => {
   };
 
   return (
-    <Container size="xl" p="md" pos="relative">
+    <Container size="xl" p="md" mt="md" pos="relative">
       <LoadingOverlay
         visible={isLoading}
         zIndex={1000}
         overlayProps={{ radius: 'sm', blur: 2 }}
       />
-
-      <Box
-        mb="xl"
-        mt={0}
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          paddingTop: 20,
-        }}
-      >
-        <Title order={2}>Deployments</Title>
-        <NamespaceSelector
-          namespaces={namespaces}
-          selectedNamespace={selectedNamespace}
-          onNamespaceChange={handleNamespaceChange}
-        />
-      </Box>
 
       {error && (
         <Paper

@@ -10,37 +10,29 @@ import {
 } from '@mantine/core';
 import PodList from '../components/Pods/PodList';
 import PodDetail from '../components/Pods/PodDetail';
-import NamespaceSelector from '../components/Namespaces/NamespaceSelector';
-import { getPods, getNamespaces } from '../services/k8sService';
+import { getPods } from '../services/k8sService';
+import { useNamespace } from '../context/NamespaceContext';
 
 const PodsPage: React.FC = () => {
+  const { globalNamespace, useGlobalNamespace } = useNamespace();
+
   const [pods, setPods] = useState<any[]>([]);
-  const [namespaces, setNamespaces] = useState<string[]>(['default']);
-  const [selectedNamespace, setSelectedNamespace] = useState('default');
+  const [selectedNamespace, setSelectedNamespace] = useState(globalNamespace);
   const [selectedPod, setSelectedPod] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch namespaces on initial load
+  // Update selected namespace when global namespace changes if using global
   useEffect(() => {
-    fetchNamespaces();
-  }, []);
+    if (useGlobalNamespace) {
+      setSelectedNamespace(globalNamespace);
+    }
+  }, [globalNamespace, useGlobalNamespace]);
 
   // Fetch pods when selected namespace changes
   useEffect(() => {
     fetchPods();
   }, [selectedNamespace]);
-
-  const fetchNamespaces = async () => {
-    try {
-      const response = await getNamespaces();
-      const namespaceNames = response.items.map((ns: any) => ns.metadata.name);
-      setNamespaces(namespaceNames);
-    } catch (err) {
-      console.error('Error fetching namespaces:', err);
-      setError('Failed to fetch namespaces');
-    }
-  };
 
   const fetchPods = async () => {
     setIsLoading(true);
@@ -58,37 +50,17 @@ const PodsPage: React.FC = () => {
     }
   };
 
-  const handleNamespaceChange = (namespace: string) => {
-    setSelectedNamespace(namespace);
-  };
-
   const handlePodSelect = (pod: any) => {
     setSelectedPod(pod);
   };
 
   return (
-    <Container size="xl" p="md" pos="relative">
+    <Container size="xl" p="md" mt="md" pos="relative">
       <LoadingOverlay
         visible={isLoading}
         zIndex={1000}
         overlayProps={{ radius: 'sm', blur: 2 }}
       />
-
-      <Box
-        mb="md"
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <Title order={2}>Kubernetes Dashboard</Title>
-        <NamespaceSelector
-          namespaces={namespaces}
-          selectedNamespace={selectedNamespace}
-          onNamespaceChange={handleNamespaceChange}
-        />
-      </Box>
 
       {error && (
         <Paper

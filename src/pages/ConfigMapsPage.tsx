@@ -14,6 +14,7 @@ import {
   Menu,
   rem,
   Tooltip,
+  Checkbox,
 } from '@mantine/core';
 import {
   IconSearch,
@@ -33,11 +34,18 @@ import {
 } from '../services/k8sService';
 import YamlEditor from '../components/Common/YamlEditor';
 import ConfirmationModal from '../components/Common/ConfirmationModal';
+import { useNamespace } from '../context/NamespaceContext';
 
 const ConfigMapsPage: React.FC = () => {
+  const {
+    globalNamespace,
+    availableNamespaces,
+    useGlobalNamespace,
+    setUseGlobalNamespace,
+  } = useNamespace();
+
   const [configMaps, setConfigMaps] = useState<any[]>([]);
-  const [namespaces, setNamespaces] = useState<string[]>(['default']);
-  const [selectedNamespace, setSelectedNamespace] = useState('default');
+  const [selectedNamespace, setSelectedNamespace] = useState(globalNamespace);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,26 +59,17 @@ const ConfigMapsPage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [configMapYaml, setConfigMapYaml] = useState<any>(null);
 
-  // Fetch namespaces on initial load
+  // Update selected namespace when global namespace changes if using global
   useEffect(() => {
-    fetchNamespaces();
-  }, []);
+    if (useGlobalNamespace) {
+      setSelectedNamespace(globalNamespace);
+    }
+  }, [globalNamespace, useGlobalNamespace]);
 
   // Fetch configMaps when selected namespace changes
   useEffect(() => {
     fetchConfigMaps();
   }, [selectedNamespace]);
-
-  const fetchNamespaces = async () => {
-    try {
-      const response = await getNamespaces();
-      const namespaceNames = response.items.map((ns: any) => ns.metadata.name);
-      setNamespaces(namespaceNames);
-    } catch (err) {
-      console.error('Error fetching namespaces:', err);
-      setError('Failed to fetch namespaces');
-    }
-  };
 
   const fetchConfigMaps = async () => {
     setIsLoading(true);
@@ -160,8 +159,15 @@ const ConfigMapsPage: React.FC = () => {
     }
   };
 
+  const toggleGlobalNamespace = (checked: boolean) => {
+    setUseGlobalNamespace(checked);
+    if (checked) {
+      setSelectedNamespace(globalNamespace);
+    }
+  };
+
   return (
-    <Container size="xl" p="md" pos="relative">
+    <Container size="xl" p="md" mt="md" pos="relative">
       <LoadingOverlay
         visible={isLoading}
         zIndex={1000}
@@ -179,11 +185,22 @@ const ConfigMapsPage: React.FC = () => {
         }}
       >
         <Title order={2}>ConfigMaps</Title>
-        <NamespaceSelector
-          namespaces={namespaces}
-          selectedNamespace={selectedNamespace}
-          onNamespaceChange={handleNamespaceChange}
-        />
+        <Box style={{ display: 'flex', alignItems: 'flex-end', gap: '20px' }}>
+          <Checkbox
+            label="Use global namespace"
+            checked={useGlobalNamespace}
+            onChange={(event) =>
+              toggleGlobalNamespace(event.currentTarget.checked)
+            }
+          />
+          {!useGlobalNamespace && (
+            <NamespaceSelector
+              namespaces={availableNamespaces}
+              selectedNamespace={selectedNamespace}
+              onNamespaceChange={handleNamespaceChange}
+            />
+          )}
+        </Box>
       </Box>
 
       {error && (

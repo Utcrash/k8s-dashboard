@@ -10,6 +10,7 @@ import NamespacesPage from './pages/NamespacesPage';
 import ConfigMapsPage from './pages/ConfigMapsPage';
 import ServiceAccountsPage from './pages/ServiceAccountsPage';
 import DeploymentsPage from './pages/DeploymentsPage';
+import { NamespaceProvider } from './context/NamespaceContext';
 import './App.css';
 
 // Create a theme
@@ -50,22 +51,24 @@ function App() {
     <>
       <ColorSchemeScript />
       <MantineProvider theme={theme} defaultColorScheme="light">
-        <Router>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<DashboardPage />} />
-              <Route path="/pods" element={<PodsPage />} />
-              <Route path="/services" element={<ServicesPage />} />
-              <Route path="/namespaces" element={<NamespacesPage />} />
-              <Route path="/configmaps" element={<ConfigMapsPage />} />
-              <Route
-                path="/serviceaccounts"
-                element={<ServiceAccountsPage />}
-              />
-              <Route path="/deployments" element={<DeploymentsPage />} />
-            </Routes>
-          </Layout>
-        </Router>
+        <NamespaceProvider>
+          <Router>
+            <Layout>
+              <Routes>
+                <Route path="/" element={<DashboardPage />} />
+                <Route path="/pods" element={<PodsPage />} />
+                <Route path="/services" element={<ServicesPage />} />
+                <Route path="/namespaces" element={<NamespacesPage />} />
+                <Route path="/configmaps" element={<ConfigMapsPage />} />
+                <Route
+                  path="/serviceaccounts"
+                  element={<ServiceAccountsPage />}
+                />
+                <Route path="/deployments" element={<DeploymentsPage />} />
+              </Routes>
+            </Layout>
+          </Router>
+        </NamespaceProvider>
       </MantineProvider>
     </>
   );

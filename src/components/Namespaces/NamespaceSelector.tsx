@@ -24,11 +24,18 @@ const NamespaceSelector: React.FC<NamespaceSelectorProps> = ({
         }))}
         miw={200}
         size="sm"
-        comboboxProps={{ position: 'bottom', zIndex: 1050 }}
+        comboboxProps={{
+          position: 'bottom-start',
+          offset: 0,
+          middlewares: { flip: true, shift: true },
+          zIndex: 1050,
+        }}
         styles={{
           dropdown: {
-            position: 'relative',
+            position: 'absolute',
             zIndex: 1050,
+            maxHeight: '300px',
+            overflowY: 'auto',
           },
         }}
       />

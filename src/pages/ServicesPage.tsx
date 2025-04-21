@@ -15,6 +15,7 @@ import {
   Menu,
   rem,
   Tooltip,
+  Checkbox,
 } from '@mantine/core';
 import {
   IconSearch,
@@ -34,11 +35,18 @@ import {
 } from '../services/k8sService';
 import YamlEditor from '../components/Common/YamlEditor';
 import ConfirmationModal from '../components/Common/ConfirmationModal';
+import { useNamespace } from '../context/NamespaceContext';
 
 const ServicesPage: React.FC = () => {
+  const {
+    globalNamespace,
+    availableNamespaces,
+    useGlobalNamespace,
+    setUseGlobalNamespace,
+  } = useNamespace();
+
   const [services, setServices] = useState<any[]>([]);
-  const [namespaces, setNamespaces] = useState<string[]>(['default']);
-  const [selectedNamespace, setSelectedNamespace] = useState('default');
+  const [selectedNamespace, setSelectedNamespace] = useState(globalNamespace);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,26 +60,17 @@ const ServicesPage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [serviceYaml, setServiceYaml] = useState<any>(null);
 
-  // Fetch namespaces on initial load
+  // Update selected namespace when global namespace changes if using global
   useEffect(() => {
-    fetchNamespaces();
-  }, []);
+    if (useGlobalNamespace) {
+      setSelectedNamespace(globalNamespace);
+    }
+  }, [globalNamespace, useGlobalNamespace]);
 
   // Fetch services when selected namespace changes
   useEffect(() => {
     fetchServices();
   }, [selectedNamespace]);
-
-  const fetchNamespaces = async () => {
-    try {
-      const response = await getNamespaces();
-      const namespaceNames = response.items.map((ns: any) => ns.metadata.name);
-      setNamespaces(namespaceNames);
-    } catch (err) {
-      console.error('Error fetching namespaces:', err);
-      setError('Failed to fetch namespaces');
-    }
-  };
 
   const fetchServices = async () => {
     setIsLoading(true);
@@ -157,8 +156,15 @@ const ServicesPage: React.FC = () => {
     fetchServices();
   };
 
+  const toggleGlobalNamespace = (checked: boolean) => {
+    setUseGlobalNamespace(checked);
+    if (checked) {
+      setSelectedNamespace(globalNamespace);
+    }
+  };
+
   return (
-    <Container size="xl" p="md" pos="relative">
+    <Container size="xl" p="md" mt="md" pos="relative">
       <LoadingOverlay
         visible={isLoading}
         zIndex={1000}
@@ -176,11 +182,22 @@ const ServicesPage: React.FC = () => {
         }}
       >
         <Title order={2}>Services</Title>
-        <NamespaceSelector
-          namespaces={namespaces}
-          selectedNamespace={selectedNamespace}
-          onNamespaceChange={handleNamespaceChange}
-        />
+        <Box style={{ display: 'flex', alignItems: 'flex-end', gap: '20px' }}>
+          <Checkbox
+            label="Use global namespace"
+            checked={useGlobalNamespace}
+            onChange={(event) =>
+              toggleGlobalNamespace(event.currentTarget.checked)
+            }
+          />
+          {!useGlobalNamespace && (
+            <NamespaceSelector
+              namespaces={availableNamespaces}
+              selectedNamespace={selectedNamespace}
+              onNamespaceChange={handleNamespaceChange}
+            />
+          )}
+        </Box>
       </Box>
 
       {error && (

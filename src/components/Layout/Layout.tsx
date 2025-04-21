@@ -22,7 +22,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <Sidebar />
       </AppShell.Navbar>
 
-      <AppShell.Main pt="xl">{children}</AppShell.Main>
+      <AppShell.Main pt={70}>{children}</AppShell.Main>
     </AppShell>
   );
 };

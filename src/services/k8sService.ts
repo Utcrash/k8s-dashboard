@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Base URL for the Kubernetes API
 // When running locally, we'll need to proxy requests to the K8s API
-const API_BASE_URL = '';  // Empty string to use relative URLs
+const API_BASE_URL = '/k8s-api';  // Always use /k8s-api for all environments
 
 // Configure axios with a timeout
 const api = axios.create({
@@ -57,15 +57,29 @@ export const streamPodLogs = (
     const { signal } = controller;
 
     // Build URL with params
-    let url = `/api/v1/namespaces/${namespace}/pods/${podName}/log?follow=true&tailLines=${tailLines}`;
+    let url = `${API_BASE_URL}/api/v1/namespaces/${namespace}/pods/${podName}/log?follow=true&tailLines=${tailLines}`;
     if (container) {
         url += `&container=${container}`;
+    }
+
+    // Get any authentication headers that might be in the current session
+    const headers: Record<string, string> = {};
+    if (typeof document !== 'undefined') {
+        // If we're in a browser context, try to get the Authorization header
+        const authToken = localStorage.getItem('k8s_auth_token');
+        if (authToken) {
+            headers['Authorization'] = `Bearer ${authToken}`;
+        }
     }
 
     // Use fetch with streaming response
     (async () => {
         try {
-            const response = await fetch(url, { signal });
+            const response = await fetch(url, {
+                signal,
+                credentials: 'include', // Include cookies in the request
+                headers
+            });
 
             if (!response.ok) {
                 throw new Error(`Error fetching logs: ${response.status} ${response.statusText}`);
