@@ -43,7 +43,7 @@ import {
   IconRefresh,
   IconAlertCircle,
 } from '@tabler/icons-react';
-import NamespaceSelector from '../components/Namespaces/NamespaceSelector';
+import { useNamespace } from '../context/NamespaceContext';
 import {
   getNamespaces,
   getPods,
@@ -122,10 +122,8 @@ const parseMemoryValue = (value: string): number => {
 };
 
 const DashboardPage: React.FC = () => {
-  const [namespaces, setNamespaces] = useState<string[]>(['default']);
-  const [selectedNamespace, setSelectedNamespace] = useState(
-    process.env.K8S_NAMESPACE || 'default'
-  );
+  const { globalNamespace } = useNamespace();
+  const [namespaces, setNamespaces] = useState<string[]>(['appveen']);
   const [resourceCounts, setResourceCounts] = useState<ResourceCounts>({
     pods: 0,
     services: 0,
@@ -155,7 +153,7 @@ const DashboardPage: React.FC = () => {
   // Fetch resources when namespace changes
   useEffect(() => {
     fetchResources();
-  }, [selectedNamespace]);
+  }, [globalNamespace]);
 
   const fetchNamespaces = async () => {
     try {
@@ -191,9 +189,9 @@ const DashboardPage: React.FC = () => {
       // Fetch multiple resources in parallel
       const [podsResponse, servicesResponse, deploymentsResponse] =
         await Promise.all([
-          getPods(selectedNamespace),
-          getServices(selectedNamespace),
-          getDeployments(selectedNamespace),
+          getPods(globalNamespace),
+          getServices(globalNamespace),
+          getDeployments(globalNamespace),
         ]);
 
       const pods = podsResponse.items || [];
@@ -255,10 +253,6 @@ const DashboardPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleNamespaceChange = (namespace: string) => {
-    setSelectedNamespace(namespace);
   };
 
   const isPodReady = (pod: any): boolean => {
@@ -543,11 +537,12 @@ const DashboardPage: React.FC = () => {
               Manage your Kubernetes resources
             </Text>
           </Flex>
-          <NamespaceSelector
-            namespaces={namespaces}
-            selectedNamespace={selectedNamespace}
-            onNamespaceChange={handleNamespaceChange}
-          />
+          <Text fw={500} size="md">
+            Namespace:{' '}
+            <Text span fw={700} c="blue">
+              {globalNamespace}
+            </Text>
+          </Text>
         </Group>
       </Paper>
 

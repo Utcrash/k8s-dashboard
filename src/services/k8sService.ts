@@ -58,14 +58,14 @@ export const getNamespaces = async () => {
 };
 
 // Pods
-export const getPods = async (namespace = 'default') => {
+export const getPods = async (namespace = 'appveen') => {
     const response = await api.get(`/api/v1/namespaces/${namespace}/pods`);
     return response.data;
 };
 
 export const getPodLogs = async (
     podName: string,
-    namespace = 'default',
+    namespace = 'appveen',
     container?: string,
     tailLines = 1000,
     sinceSeconds?: number
@@ -101,7 +101,7 @@ export const getPodLogs = async (
 // Stream pod logs with the follow parameter
 export const streamPodLogs = (
     podName: string,
-    namespace = 'default',
+    namespace = 'appveen',
     onLogChunk: (logChunk: string) => void,
     onError: (error: Error) => void,
     container?: string,
@@ -187,12 +187,12 @@ export const streamPodLogs = (
     return () => controller.abort();
 };
 
-export const getPod = async (name: string, namespace = 'default') => {
+export const getPod = async (name: string, namespace = 'appveen') => {
     const response = await api.get(`/api/v1/namespaces/${namespace}/pods/${name}`);
     return response.data;
 };
 
-export const updatePod = async (name: string, namespace = 'default', podYaml: any) => {
+export const updatePod = async (name: string, namespace = 'appveen', podYaml: any) => {
     const response = await api.put(
         `/api/v1/namespaces/${namespace}/pods/${name}`,
         podYaml
@@ -200,29 +200,29 @@ export const updatePod = async (name: string, namespace = 'default', podYaml: an
     return response.data;
 };
 
-export const deletePod = async (name: string, namespace = 'default') => {
+export const deletePod = async (name: string, namespace = 'appveen') => {
     const response = await api.delete(`/api/v1/namespaces/${namespace}/pods/${name}`);
     return response.data;
 };
 
-export const restartPod = async (name: string, namespace = 'default') => {
+export const restartPod = async (name: string, namespace = 'appveen') => {
     // Kubernetes doesn't have a direct "restart" API
     // We'll use the deletePod method and let the deployment/statefulset controller recreate it
     return deletePod(name, namespace);
 };
 
 // Services
-export const getServices = async (namespace = 'default') => {
+export const getServices = async (namespace = 'appveen') => {
     const response = await api.get(`/api/v1/namespaces/${namespace}/services`);
     return response.data;
 };
 
-export const getService = async (name: string, namespace = 'default') => {
+export const getService = async (name: string, namespace = 'appveen') => {
     const response = await api.get(`/api/v1/namespaces/${namespace}/services/${name}`);
     return response.data;
 };
 
-export const updateService = async (name: string, namespace = 'default', serviceYaml: any) => {
+export const updateService = async (name: string, namespace = 'appveen', serviceYaml: any) => {
     const response = await api.put(
         `/api/v1/namespaces/${namespace}/services/${name}`,
         serviceYaml
@@ -230,23 +230,23 @@ export const updateService = async (name: string, namespace = 'default', service
     return response.data;
 };
 
-export const deleteService = async (name: string, namespace = 'default') => {
+export const deleteService = async (name: string, namespace = 'appveen') => {
     const response = await api.delete(`/api/v1/namespaces/${namespace}/services/${name}`);
     return response.data;
 };
 
 // Deployments
-export const getDeployments = async (namespace = 'default') => {
+export const getDeployments = async (namespace = 'appveen') => {
     const response = await api.get(`/apis/apps/v1/namespaces/${namespace}/deployments`);
     return response.data;
 };
 
-export const getDeployment = async (name: string, namespace = 'default') => {
+export const getDeployment = async (name: string, namespace = 'appveen') => {
     const response = await api.get(`/apis/apps/v1/namespaces/${namespace}/deployments/${name}`);
     return response.data;
 };
 
-export const updateDeployment = async (name: string, namespace = 'default', deploymentYaml: any) => {
+export const updateDeployment = async (name: string, namespace = 'appveen', deploymentYaml: any) => {
     const response = await api.put(
         `/apis/apps/v1/namespaces/${namespace}/deployments/${name}`,
         deploymentYaml
@@ -254,12 +254,12 @@ export const updateDeployment = async (name: string, namespace = 'default', depl
     return response.data;
 };
 
-export const deleteDeployment = async (name: string, namespace = 'default') => {
+export const deleteDeployment = async (name: string, namespace = 'appveen') => {
     const response = await api.delete(`/apis/apps/v1/namespaces/${namespace}/deployments/${name}`);
     return response.data;
 };
 
-export const restartDeployment = async (name: string, namespace = 'default') => {
+export const restartDeployment = async (name: string, namespace = 'appveen') => {
     // To restart a deployment, we can add a unique annotation to force a rolling update
     const deployment = await getDeployment(name, namespace);
     if (!deployment.spec.template.metadata.annotations) {
@@ -273,17 +273,17 @@ export const restartDeployment = async (name: string, namespace = 'default') => 
 };
 
 // ConfigMaps
-export const getConfigMaps = async (namespace = 'default') => {
+export const getConfigMaps = async (namespace = 'appveen') => {
     const response = await api.get(`/api/v1/namespaces/${namespace}/configmaps`);
     return response.data;
 };
 
-export const getConfigMap = async (name: string, namespace = 'default') => {
+export const getConfigMap = async (name: string, namespace = 'appveen') => {
     const response = await api.get(`/api/v1/namespaces/${namespace}/configmaps/${name}`);
     return response.data;
 };
 
-export const updateConfigMap = async (name: string, namespace = 'default', configMapYaml: any) => {
+export const updateConfigMap = async (name: string, namespace = 'appveen', configMapYaml: any) => {
     const response = await api.put(
         `/api/v1/namespaces/${namespace}/configmaps/${name}`,
         configMapYaml
@@ -291,23 +291,23 @@ export const updateConfigMap = async (name: string, namespace = 'default', confi
     return response.data;
 };
 
-export const deleteConfigMap = async (name: string, namespace = 'default') => {
+export const deleteConfigMap = async (name: string, namespace = 'appveen') => {
     const response = await api.delete(`/api/v1/namespaces/${namespace}/configmaps/${name}`);
     return response.data;
 };
 
 // ServiceAccounts
-export const getServiceAccounts = async (namespace = 'default') => {
+export const getServiceAccounts = async (namespace = 'appveen') => {
     const response = await api.get(`/api/v1/namespaces/${namespace}/serviceaccounts`);
     return response.data;
 };
 
-export const getServiceAccount = async (name: string, namespace = 'default') => {
+export const getServiceAccount = async (name: string, namespace = 'appveen') => {
     const response = await api.get(`/api/v1/namespaces/${namespace}/serviceaccounts/${name}`);
     return response.data;
 };
 
-export const updateServiceAccount = async (name: string, namespace = 'default', serviceAccountYaml: any) => {
+export const updateServiceAccount = async (name: string, namespace = 'appveen', serviceAccountYaml: any) => {
     const response = await api.put(
         `/api/v1/namespaces/${namespace}/serviceaccounts/${name}`,
         serviceAccountYaml
@@ -315,7 +315,7 @@ export const updateServiceAccount = async (name: string, namespace = 'default', 
     return response.data;
 };
 
-export const deleteServiceAccount = async (name: string, namespace = 'default') => {
+export const deleteServiceAccount = async (name: string, namespace = 'appveen') => {
     const response = await api.delete(`/api/v1/namespaces/${namespace}/serviceaccounts/${name}`);
     return response.data;
 };

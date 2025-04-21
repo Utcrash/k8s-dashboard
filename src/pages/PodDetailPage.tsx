@@ -97,7 +97,7 @@ const PodDetailPage: React.FC = () => {
           {error}
         </Paper>
       ) : pod ? (
-        <PodDetail pod={pod} namespace={namespace || 'default'} />
+        <PodDetail pod={pod} namespace={namespace || 'appveen'} />
       ) : (
         <Paper p="md" withBorder>
           Pod not found

@@ -19,10 +19,10 @@ export const NamespaceProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [globalNamespace, setGlobalNamespace] = useState<string>(
-    process.env.K8S_NAMESPACE || 'default'
+    process.env.K8S_NAMESPACE || 'appveen'
   );
   const [availableNamespaces, setAvailableNamespaces] = useState<string[]>([
-    'default',
+    'appveen',
   ]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +41,7 @@ export const NamespaceProvider: React.FC<{ children: React.ReactNode }> = ({
 
         // If the currently selected namespace isn't in the list, reset to default
         if (!namespaceNames.includes(globalNamespace)) {
-          setGlobalNamespace('default');
+          setGlobalNamespace('appveen');
         }
       } catch (err) {
         console.error('Error fetching namespaces:', err);
