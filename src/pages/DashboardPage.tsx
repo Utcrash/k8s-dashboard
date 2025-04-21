@@ -20,6 +20,8 @@ import {
   Badge,
   ActionIcon,
   Tooltip,
+  Progress,
+  RingProgress,
 } from '@mantine/core';
 import { Link } from 'react-router-dom';
 import {
@@ -30,14 +32,20 @@ import {
   IconApps,
   IconFiles,
   IconUserShield,
+  IconCheck,
+  IconAlertTriangle,
+  IconCpu,
+  IconDeviceDesktopAnalytics,
+  IconDatabase,
 } from '@tabler/icons-react';
 import NamespaceSelector from '../components/Namespaces/NamespaceSelector';
-import TokenInput from '../components/TokenInput';
 import {
   getNamespaces,
   getPods,
   getServices,
   getDeployments,
+  getNodeMetrics,
+  getNodes,
 } from '../services/k8sService';
 
 interface ResourceCounts {
@@ -47,7 +55,65 @@ interface ResourceCounts {
   running: number;
   pending: number;
   failed: number;
+  ready: number;
+  readyPercentage: number;
 }
+
+interface NodeMetrics {
+  name: string;
+  cpu: {
+    usage: number;
+    capacity: number;
+    percentage: number;
+  };
+  memory: {
+    usage: number;
+    capacity: number;
+    percentage: number;
+  };
+}
+
+// Helper function to format memory in a human-readable way
+const formatMemory = (bytes: number): string => {
+  if (bytes < 1024) return bytes + ' B';
+  else if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+  else if (bytes < 1024 * 1024 * 1024)
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  else return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+};
+
+// Helper function to parse K8s CPU values like "100m" into millicores
+const parseCpuValue = (value: string): number => {
+  if (value.endsWith('m')) {
+    return parseInt(value.slice(0, -1), 10);
+  }
+  // If not in millicores format, assume it's in cores
+  return parseFloat(value) * 1000;
+};
+
+// Helper function to parse K8s memory values like "1Gi" into bytes
+const parseMemoryValue = (value: string): number => {
+  const units: Record<string, number> = {
+    Ki: 1024,
+    Mi: 1024 * 1024,
+    Gi: 1024 * 1024 * 1024,
+    Ti: 1024 * 1024 * 1024 * 1024,
+    K: 1000,
+    M: 1000 * 1000,
+    G: 1000 * 1000 * 1000,
+    T: 1000 * 1000 * 1000 * 1000,
+  };
+
+  // Check for unit suffix
+  for (const [suffix, multiplier] of Object.entries(units)) {
+    if (value.endsWith(suffix)) {
+      return parseFloat(value.slice(0, -suffix.length)) * multiplier;
+    }
+  }
+
+  // Default to bytes if no suffix
+  return parseFloat(value);
+};
 
 const DashboardPage: React.FC = () => {
   const [namespaces, setNamespaces] = useState<string[]>(['default']);
@@ -59,14 +125,20 @@ const DashboardPage: React.FC = () => {
     running: 0,
     pending: 0,
     failed: 0,
+    ready: 0,
+    readyPercentage: 0,
   });
   const [recentPods, setRecentPods] = useState<any[]>([]);
+  const [clusterMetrics, setClusterMetrics] = useState<NodeMetrics[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMetricsLoading, setIsMetricsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [metricsError, setMetricsError] = useState<string | null>(null);
 
   // Fetch namespaces on initial load
   useEffect(() => {
     fetchNamespaces();
+    fetchClusterMetrics();
   }, []);
 
   // Fetch resources when namespace changes
@@ -82,6 +154,71 @@ const DashboardPage: React.FC = () => {
     } catch (err) {
       console.error('Error fetching namespaces:', err);
       setError('Failed to fetch namespaces');
+    }
+  };
+
+  const fetchClusterMetrics = async () => {
+    setIsMetricsLoading(true);
+    setMetricsError(null);
+    try {
+      // Get all nodes and their metrics
+      const [nodeMetricsResponse, nodesResponse] = await Promise.all([
+        getNodeMetrics(),
+        getNodes(),
+      ]);
+
+      const nodeMetrics = nodeMetricsResponse.items || [];
+      const nodes = nodesResponse.items || [];
+
+      // Map nodes with their metrics
+      const metricsData: NodeMetrics[] = nodes.map((node: any) => {
+        const nodeMetric =
+          nodeMetrics.find(
+            (metric: any) => metric.metadata.name === node.metadata.name
+          ) || null;
+
+        // Get node capacity
+        const cpuCapacity = parseCpuValue(node.status.capacity.cpu);
+        const memoryCapacity = parseMemoryValue(node.status.capacity.memory);
+
+        // Get current usage (if metrics are available)
+        let cpuUsage = 0;
+        let memoryUsage = 0;
+
+        if (nodeMetric && nodeMetric.usage) {
+          cpuUsage = parseCpuValue(nodeMetric.usage.cpu);
+          memoryUsage = parseMemoryValue(nodeMetric.usage.memory);
+        }
+
+        // Calculate percentages
+        const cpuPercentage =
+          cpuCapacity > 0 ? Math.min(100, (cpuUsage / cpuCapacity) * 100) : 0;
+        const memoryPercentage =
+          memoryCapacity > 0
+            ? Math.min(100, (memoryUsage / memoryCapacity) * 100)
+            : 0;
+
+        return {
+          name: node.metadata.name,
+          cpu: {
+            usage: cpuUsage,
+            capacity: cpuCapacity,
+            percentage: cpuPercentage,
+          },
+          memory: {
+            usage: memoryUsage,
+            capacity: memoryCapacity,
+            percentage: memoryPercentage,
+          },
+        };
+      });
+
+      setClusterMetrics(metricsData);
+    } catch (err) {
+      console.error('Error fetching cluster metrics:', err);
+      setMetricsError('Failed to fetch cluster metrics');
+    } finally {
+      setIsMetricsLoading(false);
     }
   };
 
@@ -112,6 +249,22 @@ const DashboardPage: React.FC = () => {
         (pod: any) => pod.status.phase === 'Failed'
       ).length;
 
+      // Count ready pods
+      let readyPods = 0;
+      pods.forEach((pod: any) => {
+        if (pod.status.containerStatuses) {
+          const allContainersReady = pod.status.containerStatuses.every(
+            (container: any) => container.ready
+          );
+          if (allContainersReady) {
+            readyPods++;
+          }
+        }
+      });
+
+      const readyPercentage =
+        pods.length > 0 ? Math.round((readyPods / pods.length) * 100) : 0;
+
       setResourceCounts({
         pods: pods.length,
         services: services.length,
@@ -119,6 +272,8 @@ const DashboardPage: React.FC = () => {
         running,
         pending,
         failed,
+        ready: readyPods,
+        readyPercentage,
       });
 
       // Sort pods by creation time (most recent first) and take top 5
@@ -144,32 +299,46 @@ const DashboardPage: React.FC = () => {
     setSelectedNamespace(namespace);
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'Running':
-        return (
-          <ThemeIcon color="green" variant="light" size="md">
-            <span>✓</span>
-          </ThemeIcon>
-        );
-      case 'Pending':
-        return (
-          <ThemeIcon color="yellow" variant="light" size="md">
-            <span>⚠️</span>
-          </ThemeIcon>
-        );
-      case 'Failed':
-        return (
-          <ThemeIcon color="red" variant="light" size="md">
-            <span>✗</span>
-          </ThemeIcon>
-        );
-      default:
-        return (
-          <ThemeIcon color="blue" variant="light" size="md">
-            <span>✓</span>
-          </ThemeIcon>
-        );
+  const isPodReady = (pod: any): boolean => {
+    if (!pod.status.containerStatuses) return false;
+    return pod.status.containerStatuses.every(
+      (container: any) => container.ready
+    );
+  };
+
+  const getStatusIcon = (status: string, pod: any) => {
+    const ready = isPodReady(pod);
+
+    if (status === 'Running' && ready) {
+      return (
+        <ThemeIcon color="green" variant="light" size="md">
+          <IconCheck size="1rem" />
+        </ThemeIcon>
+      );
+    } else if (status === 'Running' && !ready) {
+      return (
+        <ThemeIcon color="orange" variant="light" size="md">
+          <IconAlertTriangle size="1rem" />
+        </ThemeIcon>
+      );
+    } else if (status === 'Pending') {
+      return (
+        <ThemeIcon color="yellow" variant="light" size="md">
+          <IconAlertTriangle size="1rem" />
+        </ThemeIcon>
+      );
+    } else if (status === 'Failed') {
+      return (
+        <ThemeIcon color="red" variant="light" size="md">
+          <IconAlertTriangle size="1rem" />
+        </ThemeIcon>
+      );
+    } else {
+      return (
+        <ThemeIcon color="blue" variant="light" size="md">
+          <IconCheck size="1rem" />
+        </ThemeIcon>
+      );
     }
   };
 
@@ -209,18 +378,131 @@ const DashboardPage: React.FC = () => {
         </Paper>
       )}
 
-      <Paper
-        p="md"
-        mb="xl"
-        radius="md"
-        withBorder
-        shadow="sm"
-        style={{ background: 'linear-gradient(to right, #f7fafc, #edf2f7)' }}
-      >
-        <TokenInput />
-      </Paper>
+      <Grid gutter="xl" mb="xl">
+        {/* Cluster Metrics */}
+        <Grid.Col span={12}>
+          <Card withBorder shadow="sm" radius="md">
+            <Card.Section
+              p="md"
+              style={{
+                background: 'linear-gradient(to right, #f0f6ff, #e6f9ff)',
+                borderBottom: '1px solid #e6f0fa',
+              }}
+            >
+              <Group justify="apart">
+                <Title order={4}>Cluster Metrics</Title>
+                <Badge color="indigo" variant="light">
+                  System
+                </Badge>
+              </Group>
+            </Card.Section>
+            <Card.Section p="lg">
+              {isMetricsLoading ? (
+                <Flex justify="center" align="center" h={150}>
+                  <Loader size="sm" />
+                </Flex>
+              ) : metricsError ? (
+                <Paper
+                  p="md"
+                  radius="sm"
+                  style={{
+                    backgroundColor: '#fff4e5',
+                    borderLeft: '4px solid #ffab40',
+                  }}
+                >
+                  <Text c="orange" fw={500} size="sm">
+                    {metricsError}
+                  </Text>
+                </Paper>
+              ) : (
+                <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
+                  {clusterMetrics.map((node) => (
+                    <Paper key={node.name} withBorder p="md" radius="md">
+                      <Title order={5} mb="sm">
+                        {node.name}
+                      </Title>
+                      <Group justify="apart" mb="md">
+                        <Group>
+                          <ThemeIcon color="blue" size="lg" radius="xl">
+                            <IconCpu size="1.3rem" />
+                          </ThemeIcon>
+                          <Box>
+                            <Text size="xs" c="dimmed">
+                              CPU Usage
+                            </Text>
+                            <Text size="sm" fw={500}>
+                              {(node.cpu.usage / 1000).toFixed(2)} /{' '}
+                              {(node.cpu.capacity / 1000).toFixed(2)} cores
+                            </Text>
+                          </Box>
+                        </Group>
+                        <RingProgress
+                          size={60}
+                          thickness={4}
+                          roundCaps
+                          sections={[
+                            {
+                              value: node.cpu.percentage,
+                              color:
+                                node.cpu.percentage > 90
+                                  ? 'red'
+                                  : node.cpu.percentage > 70
+                                  ? 'orange'
+                                  : 'blue',
+                            },
+                          ]}
+                          label={
+                            <Text size="xs" ta="center" fw={700}>
+                              {Math.round(node.cpu.percentage)}%
+                            </Text>
+                          }
+                        />
+                      </Group>
+                      <Group justify="apart">
+                        <Group>
+                          <ThemeIcon color="green" size="lg" radius="xl">
+                            <IconDatabase size="1.3rem" />
+                          </ThemeIcon>
+                          <Box>
+                            <Text size="xs" c="dimmed">
+                              Memory Usage
+                            </Text>
+                            <Text size="sm" fw={500}>
+                              {formatMemory(node.memory.usage)} /{' '}
+                              {formatMemory(node.memory.capacity)}
+                            </Text>
+                          </Box>
+                        </Group>
+                        <RingProgress
+                          size={60}
+                          thickness={4}
+                          roundCaps
+                          sections={[
+                            {
+                              value: node.memory.percentage,
+                              color:
+                                node.memory.percentage > 90
+                                  ? 'red'
+                                  : node.memory.percentage > 70
+                                  ? 'orange'
+                                  : 'green',
+                            },
+                          ]}
+                          label={
+                            <Text size="xs" ta="center" fw={700}>
+                              {Math.round(node.memory.percentage)}%
+                            </Text>
+                          }
+                        />
+                      </Group>
+                    </Paper>
+                  ))}
+                </SimpleGrid>
+              )}
+            </Card.Section>
+          </Card>
+        </Grid.Col>
 
-      <Grid gutter="xl">
         {/* Resource Stats */}
         <Grid.Col span={{ base: 12, md: 8 }}>
           <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
@@ -253,6 +535,41 @@ const DashboardPage: React.FC = () => {
                     <Text size="sm" ta="center" c="dimmed" mb="lg">
                       Total Pods
                     </Text>
+
+                    {/* Ready Pods Progress */}
+                    <Box mb="md">
+                      <Group justify="apart" mb={5}>
+                        <Text size="sm" fw={500}>
+                          Ready Status
+                        </Text>
+                        <Text
+                          size="sm"
+                          fw={700}
+                          c={
+                            resourceCounts.readyPercentage === 100
+                              ? 'green'
+                              : 'orange'
+                          }
+                        >
+                          {resourceCounts.ready} / {resourceCounts.pods}
+                        </Text>
+                      </Group>
+                      <Progress
+                        value={resourceCounts.readyPercentage}
+                        color={
+                          resourceCounts.readyPercentage === 100
+                            ? 'green'
+                            : resourceCounts.readyPercentage > 50
+                            ? 'blue'
+                            : 'orange'
+                        }
+                        size="md"
+                        radius="xl"
+                        striped={resourceCounts.readyPercentage < 100}
+                        animated={resourceCounts.readyPercentage < 100}
+                      />
+                    </Box>
+
                     <Divider my="md" />
                     <Group justify="space-between">
                       <Flex direction="column" align="center">
@@ -496,7 +813,7 @@ const DashboardPage: React.FC = () => {
                   {recentPods.map((pod) => (
                     <List.Item
                       key={pod.metadata.uid}
-                      icon={getStatusIcon(pod.status.phase)}
+                      icon={getStatusIcon(pod.status.phase, pod)}
                     >
                       <Paper withBorder radius="md" p="xs" w="100%">
                         <Group justify="apart" wrap="nowrap">
@@ -510,18 +827,38 @@ const DashboardPage: React.FC = () => {
                                 pod.metadata.creationTimestamp
                               ).toLocaleString()}
                             </Text>
+                            {pod.status.containerStatuses && (
+                              <Text
+                                size="xs"
+                                c={isPodReady(pod) ? 'green' : 'orange'}
+                              >
+                                Ready:{' '}
+                                {
+                                  pod.status.containerStatuses.filter(
+                                    (c: any) => c.ready
+                                  ).length
+                                }
+                                /{pod.status.containerStatuses.length}
+                              </Text>
+                            )}
                           </div>
                           <Badge
                             color={
-                              pod.status.phase === 'Running'
+                              isPodReady(pod) && pod.status.phase === 'Running'
                                 ? 'green'
+                                : pod.status.phase === 'Running'
+                                ? 'orange'
                                 : pod.status.phase === 'Pending'
                                 ? 'yellow'
                                 : 'red'
                             }
                             variant="light"
                           >
-                            {pod.status.phase}
+                            {isPodReady(pod) && pod.status.phase === 'Running'
+                              ? 'Ready'
+                              : pod.status.phase === 'Running'
+                              ? 'Not Ready'
+                              : pod.status.phase}
                           </Badge>
                         </Group>
                       </Paper>

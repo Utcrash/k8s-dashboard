@@ -1,5 +1,5 @@
 import React from 'react';
-import { Select, Box } from '@mantine/core';
+import { Select, Box, Badge, Group } from '@mantine/core';
 
 interface NamespaceSelectorProps {
   namespaces: string[];
@@ -22,6 +22,13 @@ const NamespaceSelector: React.FC<NamespaceSelectorProps> = ({
           value: namespace,
           label: namespace,
         }))}
+        searchable
+        nothingFoundMessage="No namespaces found"
+        rightSection={
+          <Badge size="xs" color="blue" variant="light">
+            {namespaces.length}
+          </Badge>
+        }
         miw={200}
         size="sm"
         comboboxProps={{
@@ -38,6 +45,7 @@ const NamespaceSelector: React.FC<NamespaceSelectorProps> = ({
             overflowY: 'auto',
           },
         }}
+        maxDropdownHeight={300}
       />
     </Box>
   );

@@ -9,6 +9,7 @@ import {
   IconApps,
   IconFiles,
   IconUserShield,
+  IconKey,
 } from '@tabler/icons-react';
 
 interface MenuItem {
@@ -64,6 +65,12 @@ const Sidebar: React.FC = () => {
       icon: <IconUserShield size="1.3rem" stroke={1.5} />,
       path: '/serviceaccounts',
       category: 'Configuration',
+    },
+    {
+      text: 'API Token',
+      icon: <IconKey size="1.3rem" stroke={1.5} />,
+      path: '/token',
+      category: 'Settings',
     },
   ];
 

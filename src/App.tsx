@@ -10,6 +10,7 @@ import NamespacesPage from './pages/NamespacesPage';
 import ConfigMapsPage from './pages/ConfigMapsPage';
 import ServiceAccountsPage from './pages/ServiceAccountsPage';
 import DeploymentsPage from './pages/DeploymentsPage';
+import TokenPage from './pages/TokenPage';
 import { NamespaceProvider } from './context/NamespaceContext';
 import './App.css';
 
@@ -65,6 +66,7 @@ function App() {
                   element={<ServiceAccountsPage />}
                 />
                 <Route path="/deployments" element={<DeploymentsPage />} />
+                <Route path="/token" element={<TokenPage />} />
               </Routes>
             </Layout>
           </Router>
