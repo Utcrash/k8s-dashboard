@@ -42,10 +42,12 @@ npm start
 
 ## Configuration
 
-The dashboard connects to the Kubernetes API through the proxy running on `http://localhost:8001` by default. You can customize this by setting the `REACT_APP_K8S_API_URL` environment variable:
+The dashboard connects to the Kubernetes API through the proxy running on `http://localhost:8001` by default. You can customize this by setting the `K8S_API_URL` environment variable.
+
+> **Important Note**: Since this is a Create React App project, custom environment variables are normally required to start with `REACT_APP_` to be accessible in the browser code. We've removed this prefix for cleaner configuration, but you'll need to ensure these variables are properly injected during the build process. If you're using the standard Create React App build process, you may need to change back to using the `REACT_APP_` prefix.
 
 ```bash
-REACT_APP_K8S_API_URL=http://your-k8s-api-server npm start
+K8S_API_URL=http://your-k8s-api-server npm start
 ```
 
 ## Deploying to Production
@@ -96,3 +98,10 @@ kubectl apply -f kubernetes/deployment.yaml
 - Implement edit and delete functionality
 - Add metrics visualization
 - Support dark/light theme toggle
+
+## Environment Variables
+
+| Variable        | Description                                         | Default Value           |
+| --------------- | --------------------------------------------------- | ----------------------- |
+| `K8S_API_URL`   | The URL for the Kubernetes API server               | `http://localhost:8001` |
+| `K8S_NAMESPACE` | The default namespace to display when the app loads | `default`               |

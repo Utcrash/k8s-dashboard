@@ -5,7 +5,7 @@ module.exports = function (app) {
     app.use(
         '/k8s-api',
         createProxyMiddleware({
-            target: process.env.REACT_APP_K8S_API_URL || 'http://localhost:8001',
+            target: process.env.K8S_API_URL || 'http://localhost:8001',
             changeOrigin: true,
             pathRewrite: {
                 '^/k8s-api': '', // Remove the /k8s-api prefix before forwarding to the K8s API
@@ -14,10 +14,18 @@ module.exports = function (app) {
             logLevel: 'debug',
             timeout: 30000, // 30 second timeout
             proxyTimeout: 30000,
+            // Don't attempt websocket upgrade for metrics API
+            ws: false,
+            onProxyReq: (proxyReq, req, res) => {
+                // Log the requested URL for debugging
+                console.log(`Proxying request to: ${req.method} ${proxyReq.path}`);
+            },
             onError: (err, req, res) => {
                 console.error('Proxy Error:', err);
-                res.writeHead(504);
-                res.end('Kubernetes API proxy error - make sure kubectl proxy is running on port 8001');
+                if (!res.headersSent) {
+                    res.writeHead(503);
+                    res.end(`Kubernetes API proxy error: ${err.message}`);
+                }
             }
         })
     );

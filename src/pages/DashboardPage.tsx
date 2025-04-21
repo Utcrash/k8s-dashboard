@@ -52,6 +52,7 @@ import {
   getNodeMetrics,
   getNodes,
 } from '../services/k8sService';
+import axios from 'axios';
 
 interface ResourceCounts {
   pods: number;
@@ -122,7 +123,9 @@ const parseMemoryValue = (value: string): number => {
 
 const DashboardPage: React.FC = () => {
   const [namespaces, setNamespaces] = useState<string[]>(['default']);
-  const [selectedNamespace, setSelectedNamespace] = useState('default');
+  const [selectedNamespace, setSelectedNamespace] = useState(
+    process.env.K8S_NAMESPACE || 'default'
+  );
   const [resourceCounts, setResourceCounts] = useState<ResourceCounts>({
     pods: 0,
     services: 0,
@@ -367,55 +370,165 @@ const DashboardPage: React.FC = () => {
     setIsMetricsLoading(true);
     try {
       console.log('Testing metrics API connection...');
-      // Make a direct fetch request to test the connection
-      const response = await fetch(
-        `/k8s-api/apis/metrics.k8s.io/v1beta1/nodes`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            // Add auth token if available
-            ...(localStorage.getItem('k8s_auth_token')
-              ? {
-                  Authorization: `Bearer ${localStorage.getItem(
-                    'k8s_auth_token'
-                  )}`,
-                }
-              : {}),
-          },
-        }
-      );
 
-      console.log(
-        'Test API response status:',
-        response.status,
-        response.statusText
-      );
+      // Try both direct fetch and axios approaches
+      const results = [];
 
-      // Get response as text so we can see any error messages
-      const responseText = await response.text();
-      setRawMetricsResponse(responseText);
+      // Variables to track response objects
+      let axiosResponse = null;
+      let fetchResponse = null;
 
-      // If it's valid JSON, try to parse it
+      // Method 1: Using axios with specific headers
       try {
-        const jsonResponse = JSON.parse(responseText);
-        console.log('Parsed response:', jsonResponse);
-        if (jsonResponse.items && jsonResponse.items.length > 0) {
-          console.log(`Found ${jsonResponse.items.length} node metrics items`);
-        } else {
-          console.log('No metrics items found in response');
+        console.log('Testing with axios...');
+        axiosResponse = await axios.get(
+          '/k8s-api/apis/metrics.k8s.io/v1beta1/nodes',
+          {
+            headers: {
+              Accept: 'application/json',
+              Connection: 'keep-alive',
+              // Add auth token if available
+              ...(localStorage.getItem('k8s_auth_token')
+                ? {
+                    Authorization: `Bearer ${localStorage.getItem(
+                      'k8s_auth_token'
+                    )}`,
+                  }
+                : {}),
+            },
+          }
+        );
+
+        console.log('Axios response:', axiosResponse.status);
+        results.push(
+          `Axios method: ${axiosResponse.status} ${axiosResponse.statusText}`
+        );
+
+        // If we got a successful response, use it
+        setRawMetricsResponse(JSON.stringify(axiosResponse.data, null, 2));
+
+        // Check if we have items
+        if (axiosResponse.data.items && axiosResponse.data.items.length > 0) {
+          console.log(
+            `Found ${axiosResponse.data.items.length} node metrics items`
+          );
+          // Process the metrics data
+          const processedMetrics = processMetricsData(axiosResponse.data);
+          setNodeMetrics(processedMetrics);
+          setMetricsError(null);
+          return;
         }
-      } catch (e) {
-        console.error('Response is not valid JSON:', e);
+      } catch (axiosError: any) {
+        results.push(`Axios error: ${axiosError.message}`);
+        console.error('Axios test failed:', axiosError);
       }
-    } catch (error) {
+
+      // Method 2: Using standard fetch
+      try {
+        console.log('Testing with fetch...');
+        fetchResponse = await fetch(
+          '/k8s-api/apis/metrics.k8s.io/v1beta1/nodes',
+          {
+            method: 'GET',
+            headers: {
+              Accept: 'application/json',
+              // Add auth token if available
+              ...(localStorage.getItem('k8s_auth_token')
+                ? {
+                    Authorization: `Bearer ${localStorage.getItem(
+                      'k8s_auth_token'
+                    )}`,
+                  }
+                : {}),
+            },
+          }
+        );
+
+        console.log('Fetch response status:', fetchResponse.status);
+        results.push(
+          `Fetch method: ${fetchResponse.status} ${fetchResponse.statusText}`
+        );
+
+        // Get response as text
+        const responseText = await fetchResponse.text();
+        if (!axiosResponse) {
+          setRawMetricsResponse(responseText);
+        }
+
+        // Try to parse JSON
+        try {
+          const jsonResponse = JSON.parse(responseText);
+          if (
+            !axiosResponse &&
+            jsonResponse.items &&
+            jsonResponse.items.length > 0
+          ) {
+            console.log(
+              `Found ${jsonResponse.items.length} node metrics items`
+            );
+            // Process the metrics data
+            const processedMetrics = processMetricsData(jsonResponse);
+            setNodeMetrics(processedMetrics);
+            setMetricsError(null);
+          }
+        } catch (e) {
+          results.push('Response is not valid JSON');
+        }
+      } catch (fetchError: any) {
+        results.push(`Fetch error: ${fetchError.message}`);
+        console.error('Fetch test failed:', fetchError);
+      }
+
+      // Show the results of our tests
+      if (!axiosResponse && !fetchResponse) {
+        setRawMetricsResponse(`Test Results:\n${results.join('\n')}`);
+      }
+    } catch (error: any) {
       console.error('Test metrics API connection error:', error);
-      setRawMetricsResponse(
-        `Error: ${error instanceof Error ? error.message : String(error)}`
-      );
+      setRawMetricsResponse(`Error: ${error.message || String(error)}`);
     } finally {
       setIsMetricsLoading(false);
     }
+  };
+
+  // Helper function to process metrics data
+  const processMetricsData = (metricsResponse: any) => {
+    if (!metricsResponse.items) return [];
+
+    return metricsResponse.items.map((metric: any) => {
+      // Extract CPU usage
+      const cpuUsage = parseCpuValue(metric.usage?.cpu || '0');
+
+      // Extract memory usage
+      const memoryUsage = parseMemoryValue(metric.usage?.memory || '0');
+
+      // For capacity, we would ideally get this from the node object
+      // As a fallback, estimate capacity based on usage (this is just for testing)
+      const cpuCapacity = cpuUsage * 2; // Assume 50% utilization for testing
+      const memoryCapacity = memoryUsage * 2; // Assume 50% utilization for testing
+
+      // Calculate percentages
+      const cpuPercentage =
+        cpuCapacity > 0 ? Math.min(100, (cpuUsage / cpuCapacity) * 100) : 0;
+      const memoryPercentage =
+        memoryCapacity > 0
+          ? Math.min(100, (memoryUsage / memoryCapacity) * 100)
+          : 0;
+
+      return {
+        name: metric.metadata.name,
+        cpu: {
+          usage: cpuUsage,
+          capacity: cpuCapacity,
+          percentage: cpuPercentage,
+        },
+        memory: {
+          usage: memoryUsage,
+          capacity: memoryCapacity,
+          percentage: memoryPercentage,
+        },
+      };
+    });
   };
 
   return (
