@@ -306,13 +306,74 @@ const DashboardPage: React.FC = () => {
     );
   };
 
+  // Get the detailed pod status including container states
+  const getPodDetailedStatus = (pod: any): string => {
+    // If pod is being deleted
+    if (pod.metadata.deletionTimestamp) {
+      return 'Terminating';
+    }
+
+    // Check for container statuses
+    if (pod.status.containerStatuses) {
+      for (const container of pod.status.containerStatuses) {
+        // Check for waiting containers
+        if (container.state?.waiting?.reason) {
+          return container.state.waiting.reason;
+        }
+
+        // Check for terminated containers with non-zero exit code
+        if (
+          container.state?.terminated?.reason &&
+          container.state.terminated.exitCode !== 0
+        ) {
+          return container.state.terminated.reason;
+        }
+      }
+    }
+
+    // Check for init container statuses
+    if (pod.status.initContainerStatuses) {
+      for (const container of pod.status.initContainerStatuses) {
+        if (container.state?.waiting?.reason) {
+          return `Init:${container.state.waiting.reason}`;
+        }
+        if (
+          container.state?.terminated?.reason &&
+          container.state.terminated.exitCode !== 0
+        ) {
+          return `Init:${container.state.terminated.reason}`;
+        }
+      }
+    }
+
+    // Default to the phase
+    return pod.status.phase;
+  };
+
   const getStatusIcon = (status: string, pod: any) => {
     const ready = isPodReady(pod);
+    const detailedStatus = getPodDetailedStatus(pod);
 
     if (status === 'Running' && ready) {
       return (
         <ThemeIcon color="green" variant="light" size="md">
           <IconCheck size="1rem" />
+        </ThemeIcon>
+      );
+    } else if (detailedStatus === 'Terminating') {
+      return (
+        <ThemeIcon color="indigo" variant="light" size="md">
+          <IconAlertTriangle size="1rem" />
+        </ThemeIcon>
+      );
+    } else if (
+      detailedStatus.includes('Error') ||
+      detailedStatus.includes('CrashLoopBackOff') ||
+      detailedStatus.includes('ImagePull')
+    ) {
+      return (
+        <ThemeIcon color="red" variant="light" size="md">
+          <IconAlertTriangle size="1rem" />
         </ThemeIcon>
       );
     } else if (status === 'Running' && !ready) {
@@ -856,9 +917,7 @@ const DashboardPage: React.FC = () => {
                           >
                             {isPodReady(pod) && pod.status.phase === 'Running'
                               ? 'Ready'
-                              : pod.status.phase === 'Running'
-                              ? 'Not Ready'
-                              : pod.status.phase}
+                              : getPodDetailedStatus(pod)}
                           </Badge>
                         </Group>
                       </Paper>

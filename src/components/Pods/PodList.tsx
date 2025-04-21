@@ -68,46 +68,88 @@ const PodList: React.FC<PodListProps> = ({
     );
   };
 
+  // Get the detailed pod status including container states
+  const getPodDetailedStatus = (pod: any): string => {
+    // If pod is being deleted
+    if (pod.metadata.deletionTimestamp) {
+      return 'Terminating';
+    }
+
+    // Check for container statuses
+    if (pod.status.containerStatuses) {
+      for (const container of pod.status.containerStatuses) {
+        // Check for waiting containers
+        if (container.state?.waiting?.reason) {
+          return container.state.waiting.reason;
+        }
+
+        // Check for terminated containers with non-zero exit code
+        if (
+          container.state?.terminated?.reason &&
+          container.state.terminated.exitCode !== 0
+        ) {
+          return container.state.terminated.reason;
+        }
+      }
+    }
+
+    // Check for init container statuses
+    if (pod.status.initContainerStatuses) {
+      for (const container of pod.status.initContainerStatuses) {
+        if (container.state?.waiting?.reason) {
+          return `Init:${container.state.waiting.reason}`;
+        }
+        if (
+          container.state?.terminated?.reason &&
+          container.state.terminated.exitCode !== 0
+        ) {
+          return `Init:${container.state.terminated.reason}`;
+        }
+      }
+    }
+
+    // Default to the phase
+    return pod.status.phase;
+  };
+
   const getStatusBadge = (status: string, pod: any) => {
     const ready = isPodReady(pod);
+    const detailedStatus = getPodDetailedStatus(pod);
 
-    if (status === 'Running' && ready) {
-      return (
-        <Badge color="green" variant="filled" size="sm">
-          Ready
-        </Badge>
-      );
-    } else if (status === 'Running' && !ready) {
-      return (
-        <Badge color="orange" variant="filled" size="sm">
-          Not Ready
-        </Badge>
-      );
-    } else if (status === 'Pending') {
-      return (
-        <Badge color="yellow" variant="filled" size="sm">
-          {status}
-        </Badge>
-      );
-    } else if (status === 'Failed') {
-      return (
-        <Badge color="red" variant="filled" size="sm">
-          {status}
-        </Badge>
-      );
-    } else if (status === 'Succeeded') {
-      return (
-        <Badge color="blue" variant="filled" size="sm">
-          {status}
-        </Badge>
-      );
-    } else {
-      return (
-        <Badge variant="filled" size="sm">
-          {status}
-        </Badge>
-      );
+    // Choose color based on the status
+    let color = 'gray';
+    if (detailedStatus === 'Running' && ready) {
+      color = 'green';
+    } else if (detailedStatus === 'Running' && !ready) {
+      color = 'orange';
+    } else if (detailedStatus === 'Pending') {
+      color = 'yellow';
+    } else if (detailedStatus === 'Terminating') {
+      color = 'indigo';
+    } else if (
+      detailedStatus.includes('Error') ||
+      detailedStatus === 'Failed' ||
+      detailedStatus.includes('CrashLoopBackOff') ||
+      detailedStatus.includes('ImagePull')
+    ) {
+      color = 'red';
+    } else if (detailedStatus === 'Succeeded') {
+      color = 'blue';
     }
+
+    // Display text based on detailed status
+    let text = detailedStatus;
+    if (detailedStatus === 'Running' && ready) {
+      text = 'Ready';
+    } else if (detailedStatus === 'Running' && !ready) {
+      text = 'Not Ready';
+    }
+
+    return (
+      <Badge color={color} variant="filled" size="sm">
+        {text}
+      </Badge>
+    );
   };
 
   const getReadinessBadge = (pod: any) => {
