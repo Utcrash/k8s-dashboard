@@ -15,6 +15,7 @@ import {
 } from '@mantine/core';
 import { Link } from 'react-router-dom';
 import NamespaceSelector from '../components/Namespaces/NamespaceSelector';
+import TokenInput from '../components/TokenInput';
 import {
   getNamespaces,
   getPods,
@@ -184,6 +185,10 @@ const DashboardPage: React.FC = () => {
           <Text color="red">{error}</Text>
         </Paper>
       )}
+
+      <Paper p="md" mb="md" withBorder>
+        <TokenInput />
+      </Paper>
 
       <div
         style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: '1rem' }}

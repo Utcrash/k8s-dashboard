@@ -22,6 +22,15 @@ api.interceptors.response.use(
     }
 );
 
+// Add request interceptor to include authentication token
+api.interceptors.request.use(config => {
+    const token = localStorage.getItem('k8s_auth_token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
+
 // Namespaces
 export const getNamespaces = async () => {
     const response = await api.get('/api/v1/namespaces');
