@@ -14,6 +14,8 @@ import {
   CopyButton,
   ActionIcon,
   ThemeIcon,
+  Accordion,
+  Code,
 } from '@mantine/core';
 
 const TokenInput: React.FC = () => {
@@ -98,44 +100,133 @@ const TokenInput: React.FC = () => {
           <Alert
             style={styles}
             color="blue"
-            title="How to get your Kubernetes API token"
+            title="How to set up Kubernetes API access"
             variant="light"
             radius="md"
           >
-            <Text size="sm">
-              Run this command to create a token with the necessary permissions:
-            </Text>
-            <Group mt="xs" mb="xs">
-              <Box
-                style={{
-                  background: '#f1f3f5',
-                  padding: '8px 12px',
-                  borderRadius: '4px',
-                  fontFamily: 'monospace',
-                  fontSize: '0.85rem',
-                  flex: 1,
-                }}
-              >
-                kubectl create token k8s-dashboard --duration=8760h
-              </Box>
-              <CopyButton value="kubectl create token k8s-dashboard --duration=8760h">
-                {({ copied, copy }) => (
-                  <Tooltip
-                    label={copied ? 'Copied' : 'Copy'}
-                    withArrow
-                    position="right"
+            <Accordion variant="separated" radius="md">
+              <Accordion.Item value="create-account">
+                <Accordion.Control>
+                  Step 1: Create a service account with proper permissions
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <Text size="sm" mb="xs">
+                    Run these commands to create a service account in the
+                    default namespace with admin rights:
+                  </Text>
+                  <Box
+                    style={{
+                      background: '#f1f3f5',
+                      padding: '12px',
+                      borderRadius: '4px',
+                      fontFamily: 'monospace',
+                      fontSize: '0.85rem',
+                      marginBottom: '8px',
+                    }}
                   >
-                    <ActionIcon color={copied ? 'teal' : 'gray'} onClick={copy}>
-                      {copied ? '✓' : '📋'}
-                    </ActionIcon>
-                  </Tooltip>
-                )}
-              </CopyButton>
-            </Group>
-            <Text size="sm">
-              This creates a token valid for 1 year. Paste it below to enable
-              API access.
-            </Text>
+                    <Code block>
+                      # Create a service account in the default namespace
+                      kubectl create serviceaccount k8s-dashboard -n default #
+                      Give it admin permissions kubectl create
+                      clusterrolebinding k8s-dashboard-binding \
+                      --clusterrole=cluster-admin \
+                      --serviceaccount=default:k8s-dashboard
+                    </Code>
+                  </Box>
+                  <CopyButton
+                    value={`kubectl create serviceaccount k8s-dashboard -n default\nkubectl create clusterrolebinding k8s-dashboard-binding --clusterrole=cluster-admin --serviceaccount=default:k8s-dashboard`}
+                  >
+                    {({ copied, copy }) => (
+                      <Button
+                        size="xs"
+                        color={copied ? 'teal' : 'blue'}
+                        onClick={copy}
+                        mb="md"
+                      >
+                        {copied ? 'Copied!' : 'Copy commands'}
+                      </Button>
+                    )}
+                  </CopyButton>
+                </Accordion.Panel>
+              </Accordion.Item>
+
+              <Accordion.Item value="create-token">
+                <Accordion.Control>
+                  Step 2: Create a token for the service account
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <Text size="sm" mb="xs">
+                    Generate a token for the service account you just created:
+                  </Text>
+                  <Box
+                    style={{
+                      background: '#f1f3f5',
+                      padding: '12px',
+                      borderRadius: '4px',
+                      fontFamily: 'monospace',
+                      fontSize: '0.85rem',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    <Code block>
+                      kubectl create token k8s-dashboard -n default
+                      --duration=8760h
+                    </Code>
+                  </Box>
+                  <CopyButton value="kubectl create token k8s-dashboard -n default --duration=8760h">
+                    {({ copied, copy }) => (
+                      <Button
+                        size="xs"
+                        color={copied ? 'teal' : 'blue'}
+                        onClick={copy}
+                        mb="md"
+                      >
+                        {copied ? 'Copied!' : 'Copy command'}
+                      </Button>
+                    )}
+                  </CopyButton>
+                  <Text size="sm" mt="xs">
+                    This creates a token valid for 1 year. Copy the generated
+                    token and paste it below.
+                  </Text>
+                </Accordion.Panel>
+              </Accordion.Item>
+
+              <Accordion.Item value="troubleshooting">
+                <Accordion.Control>
+                  Troubleshooting API Access
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <Text size="sm" fw={500} mb="xs">
+                    If you see "Unauthorized" errors:
+                  </Text>
+                  <Box component="ul" ml="md">
+                    <Box component="li" mb="xs">
+                      <Text size="sm">
+                        Make sure you created the service account in the{' '}
+                        <b>default</b> namespace
+                      </Text>
+                    </Box>
+                    <Box component="li" mb="xs">
+                      <Text size="sm">
+                        Verify the cluster role binding was created correctly
+                      </Text>
+                    </Box>
+                    <Box component="li" mb="xs">
+                      <Text size="sm">
+                        Clear your token and generate a new one with the above
+                        commands
+                      </Text>
+                    </Box>
+                    <Box component="li">
+                      <Text size="sm">
+                        Check your cluster's RBAC settings for any restrictions
+                      </Text>
+                    </Box>
+                  </Box>
+                </Accordion.Panel>
+              </Accordion.Item>
+            </Accordion>
           </Alert>
         )}
       </Transition>

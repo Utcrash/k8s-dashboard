@@ -22,6 +22,15 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { Link } from 'react-router-dom';
+import {
+  IconDashboard,
+  IconBox,
+  IconServer,
+  IconNetwork,
+  IconApps,
+  IconFiles,
+  IconUserShield,
+} from '@tabler/icons-react';
 import NamespaceSelector from '../components/Namespaces/NamespaceSelector';
 import TokenInput from '../components/TokenInput';
 import {
@@ -226,7 +235,7 @@ const DashboardPage: React.FC = () => {
               >
                 <Group gap="sm">
                   <ThemeIcon color="blue" size="lg" radius="md" variant="light">
-                    <span style={{ fontSize: '1.2rem' }}>📦</span>
+                    <IconBox size="1.3rem" stroke={1.5} />
                   </ThemeIcon>
                   <Title order={4}>Pods</Title>
                 </Group>
@@ -310,7 +319,7 @@ const DashboardPage: React.FC = () => {
                     radius="md"
                     variant="light"
                   >
-                    <span style={{ fontSize: '1.2rem' }}>⚙️</span>
+                    <IconNetwork size="1.3rem" stroke={1.5} />
                   </ThemeIcon>
                   <Title order={4}>Services</Title>
                 </Group>
@@ -349,7 +358,7 @@ const DashboardPage: React.FC = () => {
                     radius="md"
                     variant="light"
                   >
-                    <span style={{ fontSize: '1.2rem' }}>🔀</span>
+                    <IconApps size="1.3rem" stroke={1.5} />
                   </ThemeIcon>
                   <Title order={4}>Deployments</Title>
                 </Group>
@@ -406,7 +415,7 @@ const DashboardPage: React.FC = () => {
                   >
                     <Group>
                       <ThemeIcon color="blue" size="lg" radius="md">
-                        <span style={{ fontSize: '1.2rem' }}>📦</span>
+                        <IconBox size="1.3rem" stroke={1.5} />
                       </ThemeIcon>
                       <Text fw={500}>View All Pods</Text>
                     </Group>
@@ -428,7 +437,7 @@ const DashboardPage: React.FC = () => {
                   >
                     <Group>
                       <ThemeIcon color="orange" size="lg" radius="md">
-                        <span style={{ fontSize: '1.2rem' }}>⚙️</span>
+                        <IconNetwork size="1.3rem" stroke={1.5} />
                       </ThemeIcon>
                       <Text fw={500}>View All Services</Text>
                     </Group>
@@ -450,7 +459,7 @@ const DashboardPage: React.FC = () => {
                   >
                     <Group>
                       <ThemeIcon color="indigo" size="lg" radius="md">
-                        <span style={{ fontSize: '1.2rem' }}>🔀</span>
+                        <IconApps size="1.3rem" stroke={1.5} />
                       </ThemeIcon>
                       <Text fw={500}>View All Deployments</Text>
                     </Group>
