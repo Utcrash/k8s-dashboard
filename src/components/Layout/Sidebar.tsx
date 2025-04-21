@@ -1,65 +1,135 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { NavLink, ScrollArea, Stack, Divider } from '@mantine/core';
+import { NavLink, ScrollArea, Stack, Divider, Text, Box } from '@mantine/core';
 import {
-  IconHome,
-  IconDatabase,
-  IconList,
-  IconSettings,
-  IconFileDescription,
-  IconSitemap,
-  IconPuzzle,
+  IconDashboard,
+  IconBox,
+  IconServer,
+  IconNetwork,
+  IconApps,
+  IconFiles,
+  IconUserShield,
 } from '@tabler/icons-react';
+
+interface MenuItem {
+  text: string;
+  icon: React.ReactNode;
+  path: string;
+  category: string;
+}
 
 const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const menuItems = [
-    { text: 'Dashboard', icon: <IconHome size="1.2rem" />, path: '/' },
+  const menuItems: MenuItem[] = [
+    {
+      text: 'Dashboard',
+      icon: <IconDashboard size="1.3rem" stroke={1.5} />,
+      path: '/',
+      category: 'Overview',
+    },
     {
       text: 'Namespaces',
-      icon: <IconDatabase size="1.2rem" />,
+      icon: <IconServer size="1.3rem" stroke={1.5} />,
       path: '/namespaces',
+      category: 'Overview',
     },
-    { text: 'Pods', icon: <IconList size="1.2rem" />, path: '/pods' },
+    {
+      text: 'Pods',
+      icon: <IconBox size="1.3rem" stroke={1.5} />,
+      path: '/pods',
+      category: 'Workloads',
+    },
     {
       text: 'Services',
-      icon: <IconSettings size="1.2rem" />,
+      icon: <IconNetwork size="1.3rem" stroke={1.5} />,
       path: '/services',
+      category: 'Networking',
     },
     {
       text: 'Deployments',
-      icon: <IconSitemap size="1.2rem" />,
+      icon: <IconApps size="1.3rem" stroke={1.5} />,
       path: '/deployments',
+      category: 'Workloads',
     },
     {
       text: 'ConfigMaps',
-      icon: <IconFileDescription size="1.2rem" />,
+      icon: <IconFiles size="1.3rem" stroke={1.5} />,
       path: '/configmaps',
+      category: 'Configuration',
     },
     {
       text: 'Service Accounts',
-      icon: <IconPuzzle size="1.2rem" />,
+      icon: <IconUserShield size="1.3rem" stroke={1.5} />,
       path: '/serviceaccounts',
+      category: 'Configuration',
     },
   ];
 
+  // Group items by category
+  const categories = menuItems.reduce<Record<string, MenuItem[]>>(
+    (acc, item) => {
+      if (!acc[item.category]) {
+        acc[item.category] = [];
+      }
+      acc[item.category].push(item);
+      return acc;
+    },
+    {}
+  );
+
   return (
-    <ScrollArea>
-      <Divider />
-      <Stack gap={0}>
-        {menuItems.map((item) => (
-          <NavLink
-            key={item.text}
-            label={item.text}
-            leftSection={item.icon}
-            onClick={() => navigate(item.path)}
-            active={location.pathname === item.path}
-          />
-        ))}
-      </Stack>
-    </ScrollArea>
+    <Box style={{ width: '100%' }}>
+      <ScrollArea>
+        <Divider />
+        <Stack gap="lg" py="md" px="xs">
+          {Object.entries(categories).map(([category, items]) => (
+            <Box key={category}>
+              <Text
+                size="xs"
+                c="dimmed"
+                fw={600}
+                pb="xs"
+                pl="xs"
+                tt="uppercase"
+              >
+                {category}
+              </Text>
+              <Stack gap="md">
+                {items.map((item) => (
+                  <NavLink
+                    key={item.text}
+                    label={
+                      <Text fw={location.pathname === item.path ? 600 : 400}>
+                        {item.text}
+                      </Text>
+                    }
+                    leftSection={item.icon}
+                    onClick={() => navigate(item.path)}
+                    active={location.pathname === item.path}
+                    py="md"
+                    styles={(theme) => ({
+                      root: {
+                        borderRadius: theme.radius.md,
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          backgroundColor:
+                            location.pathname === item.path
+                              ? theme.colors.blue[6]
+                              : theme.colors.gray[1],
+                          transform: 'translateX(4px)',
+                        },
+                      },
+                    })}
+                  />
+                ))}
+              </Stack>
+            </Box>
+          ))}
+        </Stack>
+      </ScrollArea>
+    </Box>
   );
 };
 

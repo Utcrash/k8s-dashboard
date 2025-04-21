@@ -12,6 +12,14 @@ import {
   ThemeIcon,
   Group,
   SimpleGrid,
+  Flex,
+  Grid,
+  Transition,
+  Space,
+  Avatar,
+  Badge,
+  ActionIcon,
+  Tooltip,
 } from '@mantine/core';
 import { Link } from 'react-router-dom';
 import NamespaceSelector from '../components/Namespaces/NamespaceSelector';
@@ -158,100 +166,128 @@ const DashboardPage: React.FC = () => {
 
   return (
     <Container size="xl" p="md">
-      <Box
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '1rem',
-        }}
-      >
-        <Title order={2}>Kubernetes Dashboard</Title>
-        <NamespaceSelector
-          namespaces={namespaces}
-          selectedNamespace={selectedNamespace}
-          onNamespaceChange={handleNamespaceChange}
-        />
-      </Box>
+      <Paper p="md" withBorder radius="md" shadow="sm" mb="xl">
+        <Group justify="space-between" wrap="nowrap">
+          <Flex direction="column" gap="xs">
+            <Title order={2} fw={700} style={{ fontSize: '1.8rem' }}>
+              Kubernetes Dashboard
+            </Title>
+            <Text size="sm" c="dimmed">
+              Manage your Kubernetes resources
+            </Text>
+          </Flex>
+          <NamespaceSelector
+            namespaces={namespaces}
+            selectedNamespace={selectedNamespace}
+            onNamespaceChange={handleNamespaceChange}
+          />
+        </Group>
+      </Paper>
 
       {error && (
         <Paper
           p="md"
-          mb="md"
+          mb="xl"
+          radius="md"
           style={{
             backgroundColor: '#ffebee',
+            borderLeft: '4px solid #f44336',
           }}
         >
-          <Text color="red">{error}</Text>
+          <Text c="red" fw={500}>
+            {error}
+          </Text>
         </Paper>
       )}
 
-      <Paper p="md" mb="md" withBorder>
+      <Paper
+        p="md"
+        mb="xl"
+        radius="md"
+        withBorder
+        shadow="sm"
+        style={{ background: 'linear-gradient(to right, #f7fafc, #edf2f7)' }}
+      >
         <TokenInput />
       </Paper>
 
-      <div
-        style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: '1rem' }}
-      >
-        {/* Resource Stats - 3 columns */}
-        <div>
-          <SimpleGrid cols={3}>
+      <Grid gutter="xl">
+        {/* Resource Stats */}
+        <Grid.Col span={{ base: 12, md: 8 }}>
+          <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
             {/* Pods */}
-            <Card withBorder shadow="sm" style={{ height: '100%' }}>
-              <Card.Section p="md">
+            <Card withBorder shadow="sm" radius="md" p={0}>
+              <Card.Section
+                p="md"
+                style={{
+                  background: 'linear-gradient(to right, #e6f7ff, #f0f9ff)',
+                  borderBottom: '1px solid #e6f0fa',
+                }}
+              >
                 <Group gap="sm">
-                  <ThemeIcon color="blue" size="lg">
-                    <span>📦</span>
+                  <ThemeIcon color="blue" size="lg" radius="md" variant="light">
+                    <span style={{ fontSize: '1.2rem' }}>📦</span>
                   </ThemeIcon>
                   <Title order={4}>Pods</Title>
                 </Group>
               </Card.Section>
-              <Card.Section p="md">
+              <Card.Section p="lg">
                 {isLoading ? (
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      height: '100px',
-                    }}
-                  >
+                  <Flex justify="center" align="center" h={100}>
                     <Loader size="sm" />
-                  </div>
+                  </Flex>
                 ) : (
                   <>
-                    <Text size="xl" fw={500} ta="center">
+                    <Text size="2rem" fw={700} ta="center" mb="xs">
                       {resourceCounts.pods}
                     </Text>
-                    <Text size="sm" ta="center" c="dimmed">
+                    <Text size="sm" ta="center" c="dimmed" mb="lg">
                       Total Pods
                     </Text>
                     <Divider my="md" />
                     <Group justify="space-between">
-                      <Box>
-                        <Text size="sm" c="dimmed">
+                      <Flex direction="column" align="center">
+                        <Badge
+                          color="green"
+                          size="lg"
+                          variant="light"
+                          radius="sm"
+                          mb="xs"
+                        >
+                          {resourceCounts.running}
+                        </Badge>
+                        <Text size="xs" c="dimmed">
                           Running
                         </Text>
-                        <Text c="green" fw={600}>
-                          {resourceCounts.running}
-                        </Text>
-                      </Box>
-                      <Box>
-                        <Text size="sm" c="dimmed">
+                      </Flex>
+                      <Flex direction="column" align="center">
+                        <Badge
+                          color="yellow"
+                          size="lg"
+                          variant="light"
+                          radius="sm"
+                          mb="xs"
+                        >
+                          {resourceCounts.pending}
+                        </Badge>
+                        <Text size="xs" c="dimmed">
                           Pending
                         </Text>
-                        <Text c="orange" fw={600}>
-                          {resourceCounts.pending}
-                        </Text>
-                      </Box>
-                      <Box>
-                        <Text size="sm" c="dimmed">
+                      </Flex>
+                      <Flex direction="column" align="center">
+                        <Badge
+                          color="red"
+                          size="lg"
+                          variant="light"
+                          radius="sm"
+                          mb="xs"
+                        >
+                          {resourceCounts.failed}
+                        </Badge>
+                        <Text size="xs" c="dimmed">
                           Failed
                         </Text>
-                        <Text c="red" fw={600}>
-                          {resourceCounts.failed}
-                        </Text>
-                      </Box>
+                      </Flex>
                     </Group>
                   </>
                 )}
@@ -259,30 +295,34 @@ const DashboardPage: React.FC = () => {
             </Card>
 
             {/* Services */}
-            <Card withBorder shadow="sm" style={{ height: '100%' }}>
-              <Card.Section p="md">
+            <Card withBorder shadow="sm" radius="md" p={0}>
+              <Card.Section
+                p="md"
+                style={{
+                  background: 'linear-gradient(to right, #fff3e6, #fff8f0)',
+                  borderBottom: '1px solid #f7ede2',
+                }}
+              >
                 <Group gap="sm">
-                  <ThemeIcon color="blue" size="lg">
-                    <span>⚙️</span>
+                  <ThemeIcon
+                    color="orange"
+                    size="lg"
+                    radius="md"
+                    variant="light"
+                  >
+                    <span style={{ fontSize: '1.2rem' }}>⚙️</span>
                   </ThemeIcon>
                   <Title order={4}>Services</Title>
                 </Group>
               </Card.Section>
-              <Card.Section p="md">
+              <Card.Section p="lg">
                 {isLoading ? (
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      height: '100px',
-                    }}
-                  >
+                  <Flex justify="center" align="center" h={100}>
                     <Loader size="sm" />
-                  </div>
+                  </Flex>
                 ) : (
                   <>
-                    <Text size="xl" fw={500} ta="center">
+                    <Text size="2rem" fw={700} ta="center" mb="xs">
                       {resourceCounts.services}
                     </Text>
                     <Text size="sm" ta="center" c="dimmed">
@@ -294,30 +334,34 @@ const DashboardPage: React.FC = () => {
             </Card>
 
             {/* Deployments */}
-            <Card withBorder shadow="sm" style={{ height: '100%' }}>
-              <Card.Section p="md">
+            <Card withBorder shadow="sm" radius="md" p={0}>
+              <Card.Section
+                p="md"
+                style={{
+                  background: 'linear-gradient(to right, #e6f2ff, #f0f6ff)',
+                  borderBottom: '1px solid #e6ecfa',
+                }}
+              >
                 <Group gap="sm">
-                  <ThemeIcon color="blue" size="lg">
-                    <span>🔀</span>
+                  <ThemeIcon
+                    color="indigo"
+                    size="lg"
+                    radius="md"
+                    variant="light"
+                  >
+                    <span style={{ fontSize: '1.2rem' }}>🔀</span>
                   </ThemeIcon>
                   <Title order={4}>Deployments</Title>
                 </Group>
               </Card.Section>
-              <Card.Section p="md">
+              <Card.Section p="lg">
                 {isLoading ? (
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      height: '100px',
-                    }}
-                  >
+                  <Flex justify="center" align="center" h={100}>
                     <Loader size="sm" />
-                  </div>
+                  </Flex>
                 ) : (
                   <>
-                    <Text size="xl" fw={500} ta="center">
+                    <Text size="2rem" fw={700} ta="center" mb="xs">
                       {resourceCounts.deployments}
                     </Text>
                     <Text size="sm" ta="center" c="dimmed">
@@ -330,92 +374,162 @@ const DashboardPage: React.FC = () => {
           </SimpleGrid>
 
           {/* Quick Actions */}
-          <Card withBorder shadow="sm" mt="md">
-            <Card.Section p="md">
-              <Title order={4}>Quick Actions</Title>
+          <Card withBorder shadow="sm" mt="xl" radius="md">
+            <Card.Section
+              p="md"
+              style={{
+                background: 'linear-gradient(to right, #f8f9fa, #f1f3f5)',
+              }}
+            >
+              <Group justify="apart">
+                <Title order={4}>Quick Actions</Title>
+                <Text size="sm" c="dimmed">
+                  Navigate to resources
+                </Text>
+              </Group>
             </Card.Section>
-            <Card.Section p="md">
-              <SimpleGrid cols={3}>
+            <Card.Section p="lg">
+              <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
                 <Link to="/pods" style={{ textDecoration: 'none' }}>
-                  <Paper withBorder p="md">
+                  <Paper
+                    withBorder
+                    p="md"
+                    radius="md"
+                    shadow="xs"
+                    style={{
+                      transition: 'transform 0.2s, box-shadow 0.2s',
+                      ':hover': {
+                        transform: 'translateY(-3px)',
+                        boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+                      },
+                    }}
+                  >
                     <Group>
-                      <ThemeIcon color="blue" size="lg">
-                        <span>📦</span>
+                      <ThemeIcon color="blue" size="lg" radius="md">
+                        <span style={{ fontSize: '1.2rem' }}>📦</span>
                       </ThemeIcon>
-                      <Text>View All Pods</Text>
+                      <Text fw={500}>View All Pods</Text>
                     </Group>
                   </Paper>
                 </Link>
                 <Link to="/services" style={{ textDecoration: 'none' }}>
-                  <Paper withBorder p="md">
+                  <Paper
+                    withBorder
+                    p="md"
+                    radius="md"
+                    shadow="xs"
+                    style={{
+                      transition: 'transform 0.2s, box-shadow 0.2s',
+                      ':hover': {
+                        transform: 'translateY(-3px)',
+                        boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+                      },
+                    }}
+                  >
                     <Group>
-                      <ThemeIcon color="blue" size="lg">
-                        <span>⚙️</span>
+                      <ThemeIcon color="orange" size="lg" radius="md">
+                        <span style={{ fontSize: '1.2rem' }}>⚙️</span>
                       </ThemeIcon>
-                      <Text>View All Services</Text>
+                      <Text fw={500}>View All Services</Text>
                     </Group>
                   </Paper>
                 </Link>
                 <Link to="/deployments" style={{ textDecoration: 'none' }}>
-                  <Paper withBorder p="md">
+                  <Paper
+                    withBorder
+                    p="md"
+                    radius="md"
+                    shadow="xs"
+                    style={{
+                      transition: 'transform 0.2s, box-shadow 0.2s',
+                      ':hover': {
+                        transform: 'translateY(-3px)',
+                        boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+                      },
+                    }}
+                  >
                     <Group>
-                      <ThemeIcon color="blue" size="lg">
-                        <span>🔀</span>
+                      <ThemeIcon color="indigo" size="lg" radius="md">
+                        <span style={{ fontSize: '1.2rem' }}>🔀</span>
                       </ThemeIcon>
-                      <Text>View All Deployments</Text>
+                      <Text fw={500}>View All Deployments</Text>
                     </Group>
                   </Paper>
                 </Link>
               </SimpleGrid>
             </Card.Section>
           </Card>
-        </div>
+        </Grid.Col>
 
-        {/* Recent Pods - 1 column */}
-        <Card withBorder shadow="sm" style={{ height: 'fit-content' }}>
-          <Card.Section p="md">
-            <Title order={4}>Recent Pods</Title>
-          </Card.Section>
-          <Card.Section p="md">
-            {isLoading ? (
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  height: '100px',
-                }}
-              >
-                <Loader />
-              </div>
-            ) : recentPods.length > 0 ? (
-              <List spacing="xs">
-                {recentPods.map((pod) => (
-                  <List.Item
-                    key={pod.metadata.uid}
-                    icon={getStatusIcon(pod.status.phase)}
-                  >
-                    <Box>
-                      <Text>{pod.metadata.name}</Text>
-                      <Text size="xs" c="dimmed">
-                        Created:{' '}
-                        {new Date(
-                          pod.metadata.creationTimestamp
-                        ).toLocaleString()}
-                      </Text>
-                    </Box>
-                    <Divider my="xs" />
-                  </List.Item>
-                ))}
-              </List>
-            ) : (
-              <Text size="sm" ta="center">
-                No pods found
-              </Text>
-            )}
-          </Card.Section>
-        </Card>
-      </div>
+        {/* Recent Pods column */}
+        <Grid.Col span={{ base: 12, md: 4 }}>
+          <Card withBorder shadow="sm" radius="md" h="100%">
+            <Card.Section
+              p="md"
+              style={{
+                background: 'linear-gradient(to right, #f5f7fa, #eef2f7)',
+              }}
+            >
+              <Group justify="apart">
+                <Title order={4}>Recent Pods</Title>
+                <Badge color="blue" variant="light">
+                  Last 5
+                </Badge>
+              </Group>
+            </Card.Section>
+            <Card.Section p="md">
+              {isLoading ? (
+                <Flex justify="center" align="center" h={200}>
+                  <Loader />
+                </Flex>
+              ) : recentPods.length > 0 ? (
+                <List spacing="md" center>
+                  {recentPods.map((pod) => (
+                    <List.Item
+                      key={pod.metadata.uid}
+                      icon={getStatusIcon(pod.status.phase)}
+                    >
+                      <Paper withBorder radius="md" p="xs" w="100%">
+                        <Group justify="apart" wrap="nowrap">
+                          <div>
+                            <Text fw={500} size="sm" lineClamp={1}>
+                              {pod.metadata.name}
+                            </Text>
+                            <Text size="xs" c="dimmed" lineClamp={1}>
+                              Created:{' '}
+                              {new Date(
+                                pod.metadata.creationTimestamp
+                              ).toLocaleString()}
+                            </Text>
+                          </div>
+                          <Badge
+                            color={
+                              pod.status.phase === 'Running'
+                                ? 'green'
+                                : pod.status.phase === 'Pending'
+                                ? 'yellow'
+                                : 'red'
+                            }
+                            variant="light"
+                          >
+                            {pod.status.phase}
+                          </Badge>
+                        </Group>
+                      </Paper>
+                    </List.Item>
+                  ))}
+                </List>
+              ) : (
+                <Flex justify="center" align="center" h={200}>
+                  <Text size="sm" c="dimmed">
+                    No pods found
+                  </Text>
+                </Flex>
+              )}
+            </Card.Section>
+          </Card>
+        </Grid.Col>
+      </Grid>
     </Container>
   );
 };
