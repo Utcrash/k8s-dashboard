@@ -38,15 +38,9 @@ import ConfirmationModal from '../components/Common/ConfirmationModal';
 import { useNamespace } from '../context/NamespaceContext';
 
 const ServicesPage: React.FC = () => {
-  const {
-    globalNamespace,
-    availableNamespaces,
-    useGlobalNamespace,
-    setUseGlobalNamespace,
-  } = useNamespace();
-
-  const [services, setServices] = useState<any[]>([]);
+  const { globalNamespace } = useNamespace();
   const [selectedNamespace, setSelectedNamespace] = useState(globalNamespace);
+  const [services, setServices] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,12 +54,10 @@ const ServicesPage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [serviceYaml, setServiceYaml] = useState<any>(null);
 
-  // Update selected namespace when global namespace changes if using global
+  // Update the namespace when the global namespace changes
   useEffect(() => {
-    if (useGlobalNamespace) {
-      setSelectedNamespace(globalNamespace);
-    }
-  }, [globalNamespace, useGlobalNamespace]);
+    setSelectedNamespace(globalNamespace);
+  }, [globalNamespace]);
 
   // Fetch services when selected namespace changes
   useEffect(() => {
@@ -156,13 +148,6 @@ const ServicesPage: React.FC = () => {
     fetchServices();
   };
 
-  const toggleGlobalNamespace = (checked: boolean) => {
-    setUseGlobalNamespace(checked);
-    if (checked) {
-      setSelectedNamespace(globalNamespace);
-    }
-  };
-
   return (
     <Container size="xl" p="md" mt="md" pos="relative">
       <LoadingOverlay
@@ -182,22 +167,6 @@ const ServicesPage: React.FC = () => {
         }}
       >
         <Title order={2}>Services</Title>
-        <Box style={{ display: 'flex', alignItems: 'flex-end', gap: '20px' }}>
-          <Checkbox
-            label="Use global namespace"
-            checked={useGlobalNamespace}
-            onChange={(event) =>
-              toggleGlobalNamespace(event.currentTarget.checked)
-            }
-          />
-          {!useGlobalNamespace && (
-            <NamespaceSelector
-              namespaces={availableNamespaces}
-              selectedNamespace={selectedNamespace}
-              onNamespaceChange={handleNamespaceChange}
-            />
-          )}
-        </Box>
       </Box>
 
       {error && (

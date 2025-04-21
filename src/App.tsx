@@ -17,6 +17,7 @@ import ConfigMapsPage from './pages/ConfigMapsPage';
 import ServiceAccountsPage from './pages/ServiceAccountsPage';
 import DeploymentsPage from './pages/DeploymentsPage';
 import TokenPage from './pages/TokenPage';
+import SecretsPage from './pages/SecretsPage';
 import { NamespaceProvider } from './context/NamespaceContext';
 import './App.css';
 
@@ -84,6 +85,7 @@ function App() {
                 />
                 <Route path="/deployments" element={<DeploymentsPage />} />
                 <Route path="/token" element={<TokenPage />} />
+                <Route path="/secrets" element={<SecretsPage />} />
                 {/* Redirect any unmatched routes to the dashboard */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>

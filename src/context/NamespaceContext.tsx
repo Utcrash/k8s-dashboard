@@ -7,8 +7,6 @@ interface NamespaceContextType {
   availableNamespaces: string[];
   isLoading: boolean;
   error: string | null;
-  useGlobalNamespace: boolean;
-  setUseGlobalNamespace: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const NamespaceContext = createContext<NamespaceContextType | undefined>(
@@ -26,7 +24,6 @@ export const NamespaceProvider: React.FC<{ children: React.ReactNode }> = ({
   ]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [useGlobalNamespace, setUseGlobalNamespace] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchNamespaces = async () => {
@@ -60,8 +57,6 @@ export const NamespaceProvider: React.FC<{ children: React.ReactNode }> = ({
     availableNamespaces,
     isLoading,
     error,
-    useGlobalNamespace,
-    setUseGlobalNamespace,
   };
 
   return (

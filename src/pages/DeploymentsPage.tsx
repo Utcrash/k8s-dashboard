@@ -16,6 +16,7 @@ import {
   rem,
   Tooltip,
   Checkbox,
+  NumberInput,
 } from '@mantine/core';
 import {
   IconSearch,
@@ -24,8 +25,12 @@ import {
   IconEdit,
   IconTrash,
   IconReload,
+  IconPlus,
+  IconMinus,
+  IconAdjustmentsHorizontal,
 } from '@tabler/icons-react';
 import { useDisclosure } from '@mantine/hooks';
+import { modals, openContextModal } from '@mantine/modals';
 import NamespaceSelector from '../components/Namespaces/NamespaceSelector';
 import {
   getDeployments,
@@ -34,13 +39,15 @@ import {
   updateDeployment,
   deleteDeployment,
   restartDeployment,
+  scaleDeployment,
 } from '../services/k8sService';
 import YamlEditor from '../components/Common/YamlEditor';
 import ConfirmationModal from '../components/Common/ConfirmationModal';
 import { useNamespace } from '../context/NamespaceContext';
+import { notifications } from '@mantine/notifications';
 
 const DeploymentsPage: React.FC = () => {
-  const { globalNamespace, useGlobalNamespace } = useNamespace();
+  const { globalNamespace } = useNamespace();
 
   const [deployments, setDeployments] = useState<any[]>([]);
   const [selectedNamespace, setSelectedNamespace] = useState(globalNamespace);
@@ -61,12 +68,10 @@ const DeploymentsPage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [deploymentYaml, setDeploymentYaml] = useState<any>(null);
 
-  // Update selected namespace when global namespace changes if using global
+  // Update the namespace when the global namespace changes
   useEffect(() => {
-    if (useGlobalNamespace) {
-      setSelectedNamespace(globalNamespace);
-    }
-  }, [globalNamespace, useGlobalNamespace]);
+    setSelectedNamespace(globalNamespace);
+  }, [globalNamespace]);
 
   // Fetch deployments when selected namespace changes
   useEffect(() => {
@@ -172,6 +177,44 @@ const DeploymentsPage: React.FC = () => {
     fetchDeployments();
   };
 
+  // Add a function to handle scaling deployments
+  const handleScaleDeployment = async (
+    name: string,
+    namespace: string,
+    currentReplicas: number,
+    newReplicas: number
+  ) => {
+    if (currentReplicas === newReplicas) return; // No change
+
+    try {
+      setIsLoading(true);
+      await scaleDeployment(name, namespace, newReplicas);
+
+      // Show success notification
+      notifications.show({
+        title: 'Deployment Scaled',
+        message: `${name} scaled to ${newReplicas} replicas`,
+        color: 'green',
+      });
+
+      // Refresh the deployments list
+      fetchDeployments();
+    } catch (error) {
+      console.error('Error scaling deployment:', error);
+
+      // Show error notification
+      notifications.show({
+        title: 'Scaling Failed',
+        message: `Failed to scale ${name}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+        color: 'red',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Container size="xl" p="md" mt="md" pos="relative">
       <LoadingOverlay
@@ -264,7 +307,31 @@ const DeploymentsPage: React.FC = () => {
                   <Table.Tr key={deployment.metadata.uid}>
                     <Table.Td>{deployment.metadata.name}</Table.Td>
                     <Table.Td>{deployment.metadata.namespace}</Table.Td>
-                    <Table.Td>{`${readyReplicas}/${desiredReplicas}`}</Table.Td>
+                    <Table.Td>
+                      <Group gap={5}>
+                        <Text size="sm">{`${readyReplicas}/${desiredReplicas}`}</Text>
+                        <Tooltip label="Scale deployment">
+                          <ActionIcon
+                            variant="light"
+                            color="blue"
+                            onClick={() => {
+                              openContextModal({
+                                modal: 'scaleDeployment',
+                                title: `Scale Deployment: ${deployment.metadata.name}`,
+                                innerProps: {
+                                  deploymentName: deployment.metadata.name,
+                                  namespace: deployment.metadata.namespace,
+                                  currentReplicas: desiredReplicas,
+                                  onScale: handleScaleDeployment,
+                                },
+                              });
+                            }}
+                          >
+                            <IconAdjustmentsHorizontal size="1rem" />
+                          </ActionIcon>
+                        </Tooltip>
+                      </Group>
+                    </Table.Td>
                     <Table.Td>{updatedReplicas}</Table.Td>
                     <Table.Td>{availableReplicas}</Table.Td>
                     <Table.Td>{age}</Table.Td>

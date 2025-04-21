@@ -320,6 +320,55 @@ export const deleteServiceAccount = async (name: string, namespace = 'appveen') 
     return response.data;
 };
 
+// Secrets
+export const getSecrets = async (namespace = 'appveen') => {
+    const response = await api.get(`/api/v1/namespaces/${namespace}/secrets`);
+    return response.data;
+};
+
+export const getSecret = async (name: string, namespace = 'appveen') => {
+    const response = await api.get(`/api/v1/namespaces/${namespace}/secrets/${name}`);
+    return response.data;
+};
+
+export const createSecret = async (namespace = 'appveen', secretData: any) => {
+    const response = await api.post(
+        `/api/v1/namespaces/${namespace}/secrets`,
+        secretData
+    );
+    return response.data;
+};
+
+export const updateSecret = async (name: string, namespace = 'appveen', secretYaml: any) => {
+    const response = await api.put(
+        `/api/v1/namespaces/${namespace}/secrets/${name}`,
+        secretYaml
+    );
+    return response.data;
+};
+
+export const deleteSecret = async (name: string, namespace = 'appveen') => {
+    const response = await api.delete(`/api/v1/namespaces/${namespace}/secrets/${name}`);
+    return response.data;
+};
+
+// Scale Deployments
+export const scaleDeployment = async (name: string, namespace = 'appveen', replicas: number) => {
+    // First get the current deployment to preserve other properties
+    const deployment = await getDeployment(name, namespace);
+
+    // Update the replica count
+    deployment.spec.replicas = replicas;
+
+    // Update the deployment
+    const response = await api.put(
+        `/apis/apps/v1/namespaces/${namespace}/deployments/${name}`,
+        deployment
+    );
+
+    return response.data;
+};
+
 // Nodes
 export const getNodes = async () => {
     const response = await api.get('/api/v1/nodes');

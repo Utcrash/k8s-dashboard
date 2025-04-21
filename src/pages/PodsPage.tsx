@@ -7,19 +7,17 @@ import { useNamespace } from '../context/NamespaceContext';
 
 const PodsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { globalNamespace, useGlobalNamespace } = useNamespace();
+  const { globalNamespace } = useNamespace();
 
   const [pods, setPods] = useState<any[]>([]);
   const [selectedNamespace, setSelectedNamespace] = useState(globalNamespace);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Update selected namespace when global namespace changes if using global
+  // Update the namespace when the global namespace changes
   useEffect(() => {
-    if (useGlobalNamespace) {
-      setSelectedNamespace(globalNamespace);
-    }
-  }, [globalNamespace, useGlobalNamespace]);
+    setSelectedNamespace(globalNamespace);
+  }, [globalNamespace]);
 
   // Fetch pods when selected namespace changes
   useEffect(() => {

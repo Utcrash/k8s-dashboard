@@ -1,53 +1,59 @@
 import React from 'react';
-import { Select, Box, Badge, Group } from '@mantine/core';
+import { Select, Box, Group, Text, Badge } from '@mantine/core';
+import { useNamespace } from '../../context/NamespaceContext';
 
+// Changed component to take minimal props
 interface NamespaceSelectorProps {
-  namespaces: string[];
-  selectedNamespace: string;
-  onNamespaceChange: (namespace: string) => void;
+  onNamespaceChange?: (namespace: string) => void;
 }
 
 const NamespaceSelector: React.FC<NamespaceSelectorProps> = ({
-  namespaces,
-  selectedNamespace,
   onNamespaceChange,
 }) => {
+  const {
+    globalNamespace,
+    setGlobalNamespace,
+    availableNamespaces,
+    isLoading,
+  } = useNamespace();
+
+  const handleChange = (value: string | null) => {
+    if (value) {
+      // Update the global namespace directly
+      setGlobalNamespace(value);
+
+      // If there's a local callback, call that too
+      if (onNamespaceChange) {
+        onNamespaceChange(value);
+      }
+    }
+  };
+
   return (
-    <Box mt={10}>
+    <Group gap="xs" align="center">
+      <Text fw={500} size="sm">
+        Namespace:
+      </Text>
       <Select
-        label="Namespace"
-        value={selectedNamespace}
-        onChange={(value) => value && onNamespaceChange(value)}
-        data={namespaces.map((namespace) => ({
+        placeholder="Select namespace"
+        value={globalNamespace}
+        onChange={handleChange}
+        data={availableNamespaces.map((namespace) => ({
           value: namespace,
           label: namespace,
         }))}
+        size="sm"
+        w={200}
         searchable
         nothingFoundMessage="No namespaces found"
         rightSection={
-          <Badge size="xs" color="blue" variant="light">
-            {namespaces.length}
+          <Badge size="xs" variant="filled" color="blue">
+            {availableNamespaces.length}
           </Badge>
         }
-        miw={200}
-        size="sm"
-        comboboxProps={{
-          position: 'bottom-start',
-          offset: 0,
-          middlewares: { flip: true, shift: true },
-          zIndex: 1050,
-        }}
-        styles={{
-          dropdown: {
-            position: 'absolute',
-            zIndex: 1050,
-            maxHeight: '300px',
-            overflowY: 'auto',
-          },
-        }}
-        maxDropdownHeight={300}
+        disabled={isLoading}
       />
-    </Box>
+    </Group>
   );
 };
 

@@ -9,6 +9,7 @@ import {
   IconApps,
   IconFiles,
   IconUserShield,
+  IconAdjustments,
   IconKey,
 } from '@tabler/icons-react';
 
@@ -70,6 +71,12 @@ const Sidebar: React.FC = () => {
       text: 'API Token',
       icon: <IconKey size="1.3rem" stroke={1.5} />,
       path: '/token',
+      category: 'Settings',
+    },
+    {
+      text: 'Secrets',
+      icon: <IconKey size={18} />,
+      path: '/secrets',
       category: 'Settings',
     },
   ];
