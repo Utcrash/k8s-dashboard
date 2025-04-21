@@ -13,6 +13,15 @@ const api = axios.create({
     timeout: 10000  // 10 second timeout
 });
 
+// Create a separate instance for log requests with a longer timeout
+const logApi = axios.create({
+    baseURL: API_BASE_URL,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    timeout: 30000  // 30 second timeout for logs
+});
+
 // Add response interceptor for better error handling
 api.interceptors.response.use(
     response => response,
@@ -22,14 +31,25 @@ api.interceptors.response.use(
     }
 );
 
+logApi.interceptors.response.use(
+    response => response,
+    error => {
+        console.error('Log API Error:', error.response?.data || error.message);
+        return Promise.reject(error);
+    }
+);
+
 // Add request interceptor to include authentication token
-api.interceptors.request.use(config => {
+const addAuthToken = (config: any) => {
     const token = localStorage.getItem('k8s_auth_token');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
-});
+};
+
+api.interceptors.request.use(addAuthToken);
+logApi.interceptors.request.use(addAuthToken);
 
 // Namespaces
 export const getNamespaces = async () => {
@@ -43,13 +63,39 @@ export const getPods = async (namespace = 'default') => {
     return response.data;
 };
 
-export const getPodLogs = async (podName: string, namespace = 'default', container?: string) => {
-    let url = `/api/v1/namespaces/${namespace}/pods/${podName}/log`;
+export const getPodLogs = async (
+    podName: string,
+    namespace = 'default',
+    container?: string,
+    tailLines = 1000,
+    sinceSeconds?: number
+) => {
+    // Build query parameters for log request
+    const params = new URLSearchParams();
+
     if (container) {
-        url += `?container=${container}`;
+        params.append('container', container);
     }
-    const response = await api.get(url);
-    return response.data;
+
+    // Limit the number of log lines to avoid massive responses
+    params.append('tailLines', tailLines.toString());
+
+    // Optionally filter logs by time
+    if (sinceSeconds) {
+        params.append('sinceSeconds', sinceSeconds.toString());
+    }
+
+    try {
+        const url = `/api/v1/namespaces/${namespace}/pods/${podName}/log?${params.toString()}`;
+        const response = await logApi.get(url);
+        return response.data;
+    } catch (error: any) {
+        // If timeout or other error, suggest using streaming
+        if (error.code === 'ECONNABORTED') {
+            return "Log request timed out. The log file might be too large. Try using streaming mode or reduce the number of lines.";
+        }
+        throw error;
+    }
 };
 
 // Stream pod logs with the follow parameter
@@ -59,7 +105,7 @@ export const streamPodLogs = (
     onLogChunk: (logChunk: string) => void,
     onError: (error: Error) => void,
     container?: string,
-    tailLines = 100
+    tailLines = 200
 ) => {
     // Create AbortController to allow canceling the streaming request
     const controller = new AbortController();

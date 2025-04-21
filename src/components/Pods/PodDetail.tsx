@@ -27,6 +27,10 @@ const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace }) => {
   const [selectedContainer, setSelectedContainer] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [tailLines, setTailLines] = useState(1000);
+  const [logTimeframe, setLogTimeframe] = useState<number | undefined>(
+    undefined
+  );
 
   // Reference to store the cancel function for streaming
   const streamingCancelRef = useRef<(() => void) | null>(null);
@@ -63,13 +67,21 @@ const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace }) => {
       const logsData = await getPodLogs(
         pod.metadata.name,
         namespace,
-        selectedContainer
+        selectedContainer,
+        tailLines,
+        logTimeframe
       );
-      // Split logs by newline and remove empty lines
-      setLogs(logsData.split('\n').filter(Boolean));
-    } catch (error) {
+
+      if (typeof logsData === 'string') {
+        // If logs data is a string (not an array), it could be an error message or a single line
+        const logLines = logsData.split('\n').filter(Boolean);
+        setLogs(logLines.length > 0 ? logLines : [logsData]);
+      } else {
+        setLogs(['Unexpected log format received']);
+      }
+    } catch (error: any) {
       console.error('Error fetching logs:', error);
-      setLogs(['Error fetching logs. Please try again.']);
+      setLogs([`Error fetching logs: ${error.message || 'Unknown error'}`]);
     } finally {
       setIsLoading(false);
     }
@@ -218,6 +230,39 @@ const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace }) => {
               label: container.name,
             }))}
             style={{ minWidth: 200 }}
+            size="sm"
+          />
+          <Select
+            label="Lines"
+            placeholder="Number of lines"
+            value={tailLines.toString()}
+            onChange={(value) => {
+              setTailLines(parseInt(value || '1000', 10));
+            }}
+            data={[
+              { value: '100', label: '100 lines' },
+              { value: '500', label: '500 lines' },
+              { value: '1000', label: '1000 lines' },
+              { value: '5000', label: '5000 lines' },
+            ]}
+            style={{ width: 140 }}
+            size="sm"
+          />
+          <Select
+            label="Time Range"
+            placeholder="All logs"
+            value={logTimeframe?.toString() || ''}
+            onChange={(value) => {
+              setLogTimeframe(value ? parseInt(value, 10) : undefined);
+            }}
+            data={[
+              { value: '', label: 'All logs' },
+              { value: '300', label: 'Last 5 minutes' },
+              { value: '900', label: 'Last 15 minutes' },
+              { value: '3600', label: 'Last hour' },
+              { value: '86400', label: 'Last 24 hours' },
+            ]}
+            style={{ width: 160 }}
             size="sm"
           />
           <Button
