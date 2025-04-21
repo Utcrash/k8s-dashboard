@@ -1,24 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Container,
-  Grid,
-  Paper,
-  Title,
-  Box,
-  LoadingOverlay,
-  Text,
-} from '@mantine/core';
+import { useNavigate } from 'react-router-dom';
+import { Container, Grid, Paper, LoadingOverlay, Text } from '@mantine/core';
 import PodList from '../components/Pods/PodList';
-import PodDetail from '../components/Pods/PodDetail';
 import { getPods } from '../services/k8sService';
 import { useNamespace } from '../context/NamespaceContext';
 
 const PodsPage: React.FC = () => {
+  const navigate = useNavigate();
   const { globalNamespace, useGlobalNamespace } = useNamespace();
 
   const [pods, setPods] = useState<any[]>([]);
   const [selectedNamespace, setSelectedNamespace] = useState(globalNamespace);
-  const [selectedPod, setSelectedPod] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,7 +32,6 @@ const PodsPage: React.FC = () => {
     try {
       const response = await getPods(selectedNamespace);
       setPods(response.items || []);
-      setSelectedPod(null); // Clear selected pod when namespace changes
     } catch (err) {
       console.error('Error fetching pods:', err);
       setError('Failed to fetch pods');
@@ -51,7 +42,8 @@ const PodsPage: React.FC = () => {
   };
 
   const handlePodSelect = (pod: any) => {
-    setSelectedPod(pod);
+    // Navigate to the pod detail page using the new URL structure
+    navigate(`/pods/${pod.metadata.namespace}/${pod.metadata.name}`);
   };
 
   return (
@@ -75,22 +67,14 @@ const PodsPage: React.FC = () => {
       )}
 
       <Grid>
-        {selectedPod ? (
-          <>
-            <Grid.Col span={12}>
-              <PodDetail pod={selectedPod} namespace={selectedNamespace} />
-            </Grid.Col>
-          </>
-        ) : (
-          <Grid.Col span={12}>
-            <PodList
-              pods={pods}
-              onPodSelect={handlePodSelect}
-              onRefresh={fetchPods}
-              isLoading={isLoading}
-            />
-          </Grid.Col>
-        )}
+        <Grid.Col span={12}>
+          <PodList
+            pods={pods}
+            onPodSelect={handlePodSelect}
+            onRefresh={fetchPods}
+            isLoading={isLoading}
+          />
+        </Grid.Col>
       </Grid>
     </Container>
   );

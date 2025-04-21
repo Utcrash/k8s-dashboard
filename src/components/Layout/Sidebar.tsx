@@ -114,7 +114,10 @@ const Sidebar: React.FC = () => {
                     }
                     leftSection={item.icon}
                     onClick={() => navigate(item.path)}
-                    active={location.pathname === item.path}
+                    active={
+                      location.pathname === item.path ||
+                      location.pathname.startsWith(`${item.path}/`)
+                    }
                     py="md"
                     styles={(theme) => ({
                       root: {

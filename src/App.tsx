@@ -1,10 +1,16 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  Navigate,
+} from 'react-router-dom';
 import { MantineProvider, createTheme, ColorSchemeScript } from '@mantine/core';
 import '@mantine/core/styles.css';
 import Layout from './components/Layout/Layout';
 import DashboardPage from './pages/DashboardPage';
 import PodsPage from './pages/PodsPage';
+import PodDetailPage from './pages/PodDetailPage';
 import ServicesPage from './pages/ServicesPage';
 import NamespacesPage from './pages/NamespacesPage';
 import ConfigMapsPage from './pages/ConfigMapsPage';
@@ -47,17 +53,28 @@ const theme = createTheme({
     '"Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
 });
 
+// Get the base URL from the environment or default to /k8s
+const BASE_URL = '/k8s';
+
 function App() {
   return (
     <>
       <ColorSchemeScript />
       <MantineProvider theme={theme} defaultColorScheme="light">
         <NamespaceProvider>
-          <Router>
+          <Router basename={BASE_URL}>
             <Layout>
               <Routes>
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/pods" element={<PodsPage />} />
+                <Route
+                  path="/pods/:namespace/:name"
+                  element={<PodDetailPage />}
+                />
+                <Route
+                  path="/pods/:namespace/:name/:tab"
+                  element={<PodDetailPage />}
+                />
                 <Route path="/services" element={<ServicesPage />} />
                 <Route path="/namespaces" element={<NamespacesPage />} />
                 <Route path="/configmaps" element={<ConfigMapsPage />} />
@@ -67,6 +84,8 @@ function App() {
                 />
                 <Route path="/deployments" element={<DeploymentsPage />} />
                 <Route path="/token" element={<TokenPage />} />
+                {/* Redirect any unmatched routes to the dashboard */}
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Layout>
           </Router>

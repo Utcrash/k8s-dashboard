@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Paper,
   Title,
@@ -22,7 +23,9 @@ interface PodDetailProps {
 }
 
 const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace }) => {
-  const [activeTab, setActiveTab] = useState('details');
+  const navigate = useNavigate();
+  const { tab = 'details' } = useParams<{ tab?: string }>();
+  const [activeTab, setActiveTab] = useState(tab);
   const [logs, setLogs] = useState<string[]>([]);
   const [selectedContainer, setSelectedContainer] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -36,6 +39,11 @@ const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace }) => {
   const streamingCancelRef = useRef<(() => void) | null>(null);
 
   const containers = pod?.spec?.containers || [];
+
+  // Update the active tab when the URL parameter changes
+  useEffect(() => {
+    setActiveTab(tab);
+  }, [tab]);
 
   useEffect(() => {
     if (containers.length > 0 && !selectedContainer) {
@@ -291,26 +299,23 @@ const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace }) => {
     return <Text>No pod data available</Text>;
   }
 
+  const handleTabChange = (value: string | null) => {
+    // Cancel streaming when switching tabs
+    if (isStreaming && value !== 'logs') {
+      cancelStreaming();
+      setIsStreaming(false);
+    }
+
+    // Update the URL when changing tabs
+    if (value) {
+      setActiveTab(value);
+      navigate(`/pods/${namespace}/${pod.metadata.name}/${value}`);
+    }
+  };
+
   return (
     <Paper p="md" withBorder>
-      <Box mb="md">
-        <Title order={3}>{pod.metadata.name}</Title>
-      </Box>
-
-      <Tabs
-        value={activeTab}
-        onChange={(value) => {
-          // Cancel streaming when switching tabs
-          if (isStreaming && value !== 'logs') {
-            cancelStreaming();
-            setIsStreaming(false);
-          }
-
-          if (value) {
-            setActiveTab(value);
-          }
-        }}
-      >
+      <Tabs value={activeTab} onChange={handleTabChange}>
         <Tabs.List>
           <Tabs.Tab value="details">Details</Tabs.Tab>
           <Tabs.Tab value="logs">Logs</Tabs.Tab>
