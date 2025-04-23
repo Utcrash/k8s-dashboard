@@ -54,6 +54,9 @@ import {
 } from '../services/k8sService';
 import axios from 'axios';
 
+// Get the default namespace from environment variables
+const DEFAULT_NAMESPACE = process.env.REACT_APP_K8S_NAMESPACE || 'default';
+
 interface ResourceCounts {
   pods: number;
   services: number;
@@ -123,7 +126,7 @@ const parseMemoryValue = (value: string): number => {
 
 const DashboardPage: React.FC = () => {
   const { globalNamespace } = useNamespace();
-  const [namespaces, setNamespaces] = useState<string[]>(['appveen']);
+  const [namespaces, setNamespaces] = useState<string[]>([DEFAULT_NAMESPACE]);
   const [resourceCounts, setResourceCounts] = useState<ResourceCounts>({
     pods: 0,
     services: 0,

@@ -14,6 +14,9 @@ import { IconArrowLeft } from '@tabler/icons-react';
 import PodDetail from '../components/Pods/PodDetail';
 import { getPod } from '../services/k8sService';
 
+// Get the default namespace from environment variables
+const DEFAULT_NAMESPACE = process.env.REACT_APP_K8S_NAMESPACE || 'default';
+
 const PodDetailPage: React.FC = () => {
   const {
     namespace,
@@ -97,7 +100,7 @@ const PodDetailPage: React.FC = () => {
           {error}
         </Paper>
       ) : pod ? (
-        <PodDetail pod={pod} namespace={namespace || 'appveen'} />
+        <PodDetail pod={pod} namespace={namespace || DEFAULT_NAMESPACE} />
       ) : (
         <Paper p="md" withBorder>
           Pod not found

@@ -1,6 +1,9 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { getNamespaces } from '../services/k8sService';
 
+// Get the default namespace from environment variables
+const DEFAULT_NAMESPACE = process.env.REACT_APP_K8S_NAMESPACE || 'default';
+
 interface NamespaceContextType {
   globalNamespace: string;
   setGlobalNamespace: React.Dispatch<React.SetStateAction<string>>;
@@ -16,11 +19,10 @@ const NamespaceContext = createContext<NamespaceContextType | undefined>(
 export const NamespaceProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [globalNamespace, setGlobalNamespace] = useState<string>(
-    process.env.K8S_NAMESPACE || 'appveen'
-  );
+  const [globalNamespace, setGlobalNamespace] =
+    useState<string>(DEFAULT_NAMESPACE);
   const [availableNamespaces, setAvailableNamespaces] = useState<string[]>([
-    'appveen',
+    DEFAULT_NAMESPACE,
   ]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +40,7 @@ export const NamespaceProvider: React.FC<{ children: React.ReactNode }> = ({
 
         // If the currently selected namespace isn't in the list, reset to default
         if (!namespaceNames.includes(globalNamespace)) {
-          setGlobalNamespace('appveen');
+          setGlobalNamespace(DEFAULT_NAMESPACE);
         }
       } catch (err) {
         console.error('Error fetching namespaces:', err);

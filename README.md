@@ -101,7 +101,17 @@ kubectl apply -f kubernetes/deployment.yaml
 
 ## Environment Variables
 
-| Variable        | Description                                         | Default Value           |
-| --------------- | --------------------------------------------------- | ----------------------- |
-| `K8S_API_URL`   | The URL for the Kubernetes API server               | `http://localhost:8001` |
-| `K8S_NAMESPACE` | The default namespace to display when the app loads | `default`               |
+The application uses environment variables for configuration. Create a `.env` file in the root directory with the following options:
+
+```
+# Default Kubernetes namespace to use
+REACT_APP_K8S_NAMESPACE=appveen
+
+# Kubernetes API proxy URL (optional, defaults to http://localhost:8001)
+# REACT_APP_API_URL=http://localhost:8001
+
+# Base path for the application (optional, defaults to /k8s)
+# PUBLIC_URL=/k8s
+```
+
+You can adjust these values based on your Kubernetes setup.
