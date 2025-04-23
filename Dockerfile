@@ -21,12 +21,13 @@ COPY --from=build /app/build /usr/share/nginx/html
 # Copy nginx config
 COPY nginx/nginx.conf /etc/nginx/conf.d/default.conf
 
-# Set environment variable placeholder for the nginx conf template
+# Set default environment variable
 ENV K8S_API_URL=http://localhost:8001
 
+# Default expose port 80
 EXPOSE 80
 
-# Use a script to replace environment variables in nginx config
+# Use a script to replace environment variables and start nginx
 COPY <<EOF /docker-entrypoint.d/40-envsubst-on-nginx-conf.sh
 #!/bin/sh
 set -e

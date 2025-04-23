@@ -8,11 +8,16 @@ A React-based web UI for monitoring and managing Kubernetes resources with featu
 - Scroll-to-bottom functionality for logs
 - Namespace selection for viewing resources
 
+## Docker Hub Repository
+
+The dashboard image is available on Docker Hub:
+[https://hub.docker.com/repository/docker/utcrash/k8s-dashboard/](https://hub.docker.com/repository/docker/utcrash/k8s-dashboard/)
+
 ## Prerequisites
 
-- Node.js 18.x or higher
-- npm 8.x or higher
-- Access to a Kubernetes cluster
+- Docker installed on your server
+- kubectl configured with access to your Kubernetes cluster
+- Nginx or another web server for SSL termination (optional)
 
 ## Setup
 
@@ -115,3 +120,60 @@ REACT_APP_K8S_NAMESPACE=appveen
 ```
 
 You can adjust these values based on your Kubernetes setup.
+
+### Step 1: Start kubectl proxy
+
+The dashboard requires access to the Kubernetes API. Start kubectl proxy as a background service:
+
+```bash
+# Run with nohup (persists until server restart)
+nohup kubectl proxy --port=8001 --address='0.0.0.0' --accept-hosts='.*' > /tmp/kubectl-proxy.log 2>&1 &
+
+# To stop the proxy later:
+pkill -f "kubectl proxy"
+```
+
+### Step 2: Run the Dashboard Container
+
+#### Simple Deployment
+
+```bash
+# Run with defaults (uses port 80, connects to localhost:8001)
+docker run -d --name k8s-dashboard utcrash/k8s-dashboard:latest
+```
+
+#### Custom Deployment
+
+```bash
+# Run with custom port and API URL
+docker run -d --name k8s-dashboard -p 9091:80 \
+  -e K8S_API_URL=http://custom-api-server:8001 \
+  utcrash/k8s-dashboard:latest
+```
+
+### Step 3: Configure Nginx (Optional)
+
+Add this to your nginx server block for SSL termination:
+
+```nginx
+location /k8s/ {
+    proxy_pass http://localhost:9091/k8s/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+location /k8s-api/ {
+    proxy_pass http://localhost:8001/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+### Accessing the Dashboard
+
+- With Nginx: https://your-domain.com/k8s/
+- Direct access: http://your-server-ip:80/k8s/
