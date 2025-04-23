@@ -386,55 +386,12 @@ export const getNode = async (name: string) => {
 
 export const getNodeMetrics = async () => {
     try {
-        console.log('Fetching node metrics from:', `${API_BASE_URL}/apis/metrics.k8s.io/v1beta1/nodes`);
-
-        // Use axios instead of fetch for this request to avoid WebSocket upgrade issues
-        const response = await api.get('/apis/metrics.k8s.io/v1beta1/nodes', {
-            headers: {
-                'Accept': 'application/json',
-                // Explicitly tell the server we don't want to upgrade to WebSocket
-                'Connection': 'keep-alive'
-            },
-            // Disable axios automatic transformation 
-            transformResponse: [(data) => data]
-        });
-
-        console.log('Metrics API response status:', response.status);
-
-        try {
-            // Parse the response data
-            const data = JSON.parse(response.data);
-            console.log('Metrics API success, items count:', data.items?.length || 0);
-            return data;
-        } catch (parseError) {
-            console.error('Failed to parse metrics response:', parseError);
-            console.log('Raw response:', response.data);
-            return { items: [] };
-        }
-    } catch (error: any) {
-        console.error('Error fetching node metrics (detailed):', error);
-
-        // Check for specific error types
-        if (typeof error.message === 'string' &&
-            (error.message.includes('upgrade') || error.message.includes('websocket'))) {
-            console.warn('WebSocket upgrade error detected - switching to alternative method');
-
-            try {
-                // Try an alternative approach with explicit no-upgrade header
-                const altResponse = await axios.get(`${API_BASE_URL}/apis/metrics.k8s.io/v1beta1/nodes`, {
-                    headers: {
-                        'Accept': 'application/json',
-                        'Connection': 'close',
-                        ...addAuthToken({})
-                    }
-                });
-                return altResponse.data;
-            } catch (altError) {
-                console.error('Alternative metrics fetch failed:', altError);
-            }
-        }
-
-        // If we get here, all attempts failed
+        // Call a backend API endpoint that will execute kubectl top node
+        const response = await api.get('/api/kubectl/top/node');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching node metrics:', error);
+        // Return empty result on error
         return { items: [] };
     }
 };

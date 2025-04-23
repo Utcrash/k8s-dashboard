@@ -1,10 +1,10 @@
-FROM node:18-alpine AS build
+FROM node:20-alpine AS build
 
 WORKDIR /app
 
 # Copy package files and install dependencies
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN NODE_OPTIONS="--max_old_space_size=4096" npm ci
 
 # Copy source code
 COPY . .
