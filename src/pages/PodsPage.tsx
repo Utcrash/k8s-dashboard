@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Grid, Paper, LoadingOverlay, Text } from '@mantine/core';
 import PodList from '../components/Pods/PodList';
-import { getPods } from '../services/k8sService';
+import { getPods, updatePod, restartPod } from '../services/k8sService';
 import { useNamespace } from '../context/NamespaceContext';
+import { showNotification } from '@mantine/notifications';
 
 const PodsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -44,6 +45,34 @@ const PodsPage: React.FC = () => {
     navigate(`/pods/${pod.metadata.namespace}/${pod.metadata.name}`);
   };
 
+  const updateAndRestartPod = async (podName: string, podYaml: any) => {
+    try {
+      // First update the pod with new YAML
+      await updatePod(podName, selectedNamespace, podYaml);
+
+      // Then restart it
+      await restartPod(podName, selectedNamespace);
+
+      // Refresh the pod list
+      await fetchPods();
+
+      // Show success notification
+      showNotification({
+        title: 'Success',
+        message: 'Pod updated and restarted successfully',
+        color: 'green',
+      });
+    } catch (error) {
+      console.error('Error updating/restarting pod:', error);
+      // Show error notification
+      showNotification({
+        title: 'Error',
+        message: 'Failed to update or restart pod',
+        color: 'red',
+      });
+    }
+  };
+
   return (
     <Container size="xl" p="md" mt="md" pos="relative">
       <LoadingOverlay
@@ -71,6 +100,7 @@ const PodsPage: React.FC = () => {
             onPodSelect={handlePodSelect}
             onRefresh={fetchPods}
             isLoading={isLoading}
+            updateAndRestartPod={updateAndRestartPod}
           />
         </Grid.Col>
       </Grid>

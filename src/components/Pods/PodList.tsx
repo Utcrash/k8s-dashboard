@@ -40,6 +40,7 @@ interface PodListProps {
   onPodSelect: (pod: any) => void;
   onRefresh: () => void;
   isLoading: boolean;
+  updateAndRestartPod?: (podName: string, podYaml: any) => Promise<void>;
 }
 
 const PodList: React.FC<PodListProps> = ({
@@ -47,6 +48,7 @@ const PodList: React.FC<PodListProps> = ({
   onPodSelect,
   onRefresh,
   isLoading,
+  updateAndRestartPod,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPodForAction, setSelectedPodForAction] = useState<any>(null);
@@ -253,14 +255,25 @@ const PodList: React.FC<PodListProps> = ({
   const handleSaveYaml = async (updatedYaml: any) => {
     if (!selectedPodForAction) return;
 
-    await updatePod(
-      selectedPodForAction.metadata.name,
-      selectedPodForAction.metadata.namespace,
-      updatedYaml
-    );
+    if (updateAndRestartPod) {
+      // Use the parent component's function that updates and restarts the pod
+      await updateAndRestartPod(
+        selectedPodForAction.metadata.name,
+        updatedYaml
+      );
+    } else {
+      // Fallback to just updating the pod without restart
+      await updatePod(
+        selectedPodForAction.metadata.name,
+        selectedPodForAction.metadata.namespace,
+        updatedYaml
+      );
 
-    // Refresh the pod list after successful update
-    onRefresh();
+      // Refresh the pod list after successful update
+      onRefresh();
+    }
+
+    closeYamlEditor();
   };
 
   return (
