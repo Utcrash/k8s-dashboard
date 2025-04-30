@@ -31,6 +31,14 @@ const NamespaceSelector: React.FC<NamespaceSelectorProps> = ({
         }
         miw={200}
         size="sm"
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            const searchValue = (event.target as HTMLInputElement).value;
+            if (namespaces.includes(searchValue)) {
+              onNamespaceChange(searchValue);
+            }
+          }
+        }}
         comboboxProps={{
           position: 'bottom-start',
           offset: 0,

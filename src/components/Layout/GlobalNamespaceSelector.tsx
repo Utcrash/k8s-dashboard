@@ -27,6 +27,14 @@ const GlobalNamespaceSelector: React.FC = () => {
         w={180}
         searchable
         nothingFoundMessage="No namespaces found"
+        onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => {
+          if (event.key === 'Enter') {
+            const searchValue = (event.target as HTMLInputElement).value;
+            if (availableNamespaces.includes(searchValue)) {
+              setGlobalNamespace(searchValue);
+            }
+          }
+        }}
         comboboxProps={{
           position: 'bottom-start',
           offset: 5,
