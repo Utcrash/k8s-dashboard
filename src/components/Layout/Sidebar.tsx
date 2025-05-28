@@ -18,7 +18,6 @@ import {
   IconUsers,
   IconRocket,
   IconLock,
-  IconCloudCode,
   IconSettings,
 } from '@tabler/icons-react';
 
@@ -57,20 +56,17 @@ function MainLink({ icon: Icon, label, path }: MainLinkProps) {
 }
 
 const mainLinks = [
-  { icon: IconDashboard, label: 'Dashboard', path: '/k8s/dashboard' },
-  { icon: IconBox, label: 'Pods', path: '/k8s/pods' },
-  { icon: IconServer, label: 'Services', path: '/k8s/services' },
-  { icon: IconFolders, label: 'Namespaces', path: '/k8s/namespaces' },
-  { icon: IconFiles, label: 'ConfigMaps', path: '/k8s/configmaps' },
-  { icon: IconUsers, label: 'ServiceAccounts', path: '/k8s/serviceaccounts' },
-  { icon: IconRocket, label: 'Deployments', path: '/k8s/deployments' },
-  { icon: IconLock, label: 'Secrets', path: '/k8s/secrets' },
+  { icon: IconDashboard, label: 'Dashboard', path: '/' },
+  { icon: IconBox, label: 'Pods', path: '/pods' },
+  { icon: IconServer, label: 'Services', path: '/services' },
+  { icon: IconFolders, label: 'Namespaces', path: '/namespaces' },
+  { icon: IconFiles, label: 'ConfigMaps', path: '/configmaps' },
+  { icon: IconUsers, label: 'ServiceAccounts', path: '/serviceaccounts' },
+  { icon: IconRocket, label: 'Deployments', path: '/deployments' },
+  { icon: IconLock, label: 'Secrets', path: '/secrets' },
 ];
 
-const settingsLinks = [
-  { icon: IconCloudCode, label: 'KubeConfig', path: '/k8s/kubeconfig' },
-  { icon: IconSettings, label: 'Settings', path: '/k8s/settings' },
-];
+const settingsLinks = [{ icon: IconSettings, label: 'Token', path: '/token' }];
 
 export default function Sidebar() {
   const mainItems = mainLinks.map((link) => (
