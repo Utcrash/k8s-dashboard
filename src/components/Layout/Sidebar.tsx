@@ -1,153 +1,114 @@
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { NavLink, ScrollArea, Stack, Divider, Text, Box } from '@mantine/core';
+import { NavLink } from 'react-router-dom';
+import {
+  Box,
+  Stack,
+  UnstyledButton,
+  Text,
+  Group,
+  MantineTheme,
+  ScrollArea,
+} from '@mantine/core';
 import {
   IconDashboard,
   IconBox,
   IconServer,
-  IconNetwork,
-  IconApps,
+  IconFolders,
   IconFiles,
-  IconUserShield,
-  IconAdjustments,
-  IconKey,
+  IconUsers,
+  IconRocket,
+  IconLock,
+  IconCloudCode,
+  IconSettings,
 } from '@tabler/icons-react';
 
-interface MenuItem {
-  text: string;
-  icon: React.ReactNode;
+interface MainLinkProps {
+  icon: typeof IconDashboard;
+  label: string;
   path: string;
-  category: string;
 }
 
-const Sidebar: React.FC = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const menuItems: MenuItem[] = [
-    {
-      text: 'Dashboard',
-      icon: <IconDashboard size="1.3rem" stroke={1.5} />,
-      path: '/',
-      category: 'Overview',
-    },
-    {
-      text: 'Namespaces',
-      icon: <IconServer size="1.3rem" stroke={1.5} />,
-      path: '/namespaces',
-      category: 'Overview',
-    },
-    {
-      text: 'Pods',
-      icon: <IconBox size="1.3rem" stroke={1.5} />,
-      path: '/pods',
-      category: 'Workloads',
-    },
-    {
-      text: 'Services',
-      icon: <IconNetwork size="1.3rem" stroke={1.5} />,
-      path: '/services',
-      category: 'Networking',
-    },
-    {
-      text: 'Deployments',
-      icon: <IconApps size="1.3rem" stroke={1.5} />,
-      path: '/deployments',
-      category: 'Workloads',
-    },
-    {
-      text: 'ConfigMaps',
-      icon: <IconFiles size="1.3rem" stroke={1.5} />,
-      path: '/configmaps',
-      category: 'Configuration',
-    },
-    {
-      text: 'Service Accounts',
-      icon: <IconUserShield size="1.3rem" stroke={1.5} />,
-      path: '/serviceaccounts',
-      category: 'Configuration',
-    },
-    {
-      text: 'API Token',
-      icon: <IconKey size="1.3rem" stroke={1.5} />,
-      path: '/token',
-      category: 'Settings',
-    },
-    {
-      text: 'Secrets',
-      icon: <IconKey size={18} />,
-      path: '/secrets',
-      category: 'Settings',
-    },
-  ];
-
-  // Group items by category
-  const categories = menuItems.reduce<Record<string, MenuItem[]>>(
-    (acc, item) => {
-      if (!acc[item.category]) {
-        acc[item.category] = [];
-      }
-      acc[item.category].push(item);
-      return acc;
-    },
-    {}
+function MainLink({ icon: Icon, label, path }: MainLinkProps) {
+  return (
+    <UnstyledButton
+      component={NavLink}
+      to={path}
+      style={(theme: MantineTheme) => ({
+        display: 'block',
+        width: '100%',
+        padding: theme.spacing.xs,
+        borderRadius: theme.radius.sm,
+        color: theme.colors.gray[7],
+        '&:hover': {
+          backgroundColor: theme.colors.gray[0],
+        },
+        '&.active': {
+          backgroundColor: theme.colors.blue[0],
+          color: theme.colors.blue[7],
+        },
+      })}
+    >
+      <Group>
+        <Icon size={20} />
+        <Text size="sm">{label}</Text>
+      </Group>
+    </UnstyledButton>
   );
+}
+
+const mainLinks = [
+  { icon: IconDashboard, label: 'Dashboard', path: '/k8s/dashboard' },
+  { icon: IconBox, label: 'Pods', path: '/k8s/pods' },
+  { icon: IconServer, label: 'Services', path: '/k8s/services' },
+  { icon: IconFolders, label: 'Namespaces', path: '/k8s/namespaces' },
+  { icon: IconFiles, label: 'ConfigMaps', path: '/k8s/configmaps' },
+  { icon: IconUsers, label: 'ServiceAccounts', path: '/k8s/serviceaccounts' },
+  { icon: IconRocket, label: 'Deployments', path: '/k8s/deployments' },
+  { icon: IconLock, label: 'Secrets', path: '/k8s/secrets' },
+];
+
+const settingsLinks = [
+  { icon: IconCloudCode, label: 'KubeConfig', path: '/k8s/kubeconfig' },
+  { icon: IconSettings, label: 'Settings', path: '/k8s/settings' },
+];
+
+export default function Sidebar() {
+  const mainItems = mainLinks.map((link) => (
+    <MainLink {...link} key={link.label} />
+  ));
+
+  const settingsItems = settingsLinks.map((link) => (
+    <MainLink {...link} key={link.label} />
+  ));
 
   return (
-    <Box style={{ width: '100%' }}>
-      <ScrollArea>
-        <Divider />
-        <Stack gap="lg" py="md" px="xs">
-          {Object.entries(categories).map(([category, items]) => (
-            <Box key={category}>
-              <Text
-                size="xs"
-                c="dimmed"
-                fw={600}
-                pb="xs"
-                pl="xs"
-                tt="uppercase"
-              >
-                {category}
-              </Text>
-              <Stack gap="md">
-                {items.map((item) => (
-                  <NavLink
-                    key={item.text}
-                    label={
-                      <Text fw={location.pathname === item.path ? 600 : 400}>
-                        {item.text}
-                      </Text>
-                    }
-                    leftSection={item.icon}
-                    onClick={() => navigate(item.path)}
-                    active={
-                      location.pathname === item.path ||
-                      location.pathname.startsWith(`${item.path}/`)
-                    }
-                    py="md"
-                    styles={(theme) => ({
-                      root: {
-                        borderRadius: theme.radius.md,
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                          backgroundColor:
-                            location.pathname === item.path
-                              ? theme.colors.blue[6]
-                              : theme.colors.gray[1],
-                          transform: 'translateX(4px)',
-                        },
-                      },
-                    })}
-                  />
-                ))}
-              </Stack>
-            </Box>
-          ))}
+    <Box
+      style={(theme: MantineTheme) => ({
+        height: '100vh',
+        backgroundColor: theme.white,
+        borderRight: `1px solid ${theme.colors.gray[2]}`,
+        width: 260,
+        display: 'flex',
+        flexDirection: 'column',
+      })}
+    >
+      <ScrollArea style={{ flex: 1 }}>
+        <Stack p="md" gap="xl">
+          <Stack gap="xs">
+            <Text size="xs" fw={500} c="dimmed">
+              MAIN
+            </Text>
+            {mainItems}
+          </Stack>
+
+          <Stack gap="xs">
+            <Text size="xs" fw={500} c="dimmed">
+              SETTINGS
+            </Text>
+            {settingsItems}
+          </Stack>
         </Stack>
       </ScrollArea>
     </Box>
   );
-};
-
-export default Sidebar;
+}
