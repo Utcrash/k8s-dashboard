@@ -21,7 +21,9 @@ import ServiceAccountsPage from './pages/ServiceAccountsPage';
 import DeploymentsPage from './pages/DeploymentsPage';
 import TokenPage from './pages/TokenPage';
 import SecretsPage from './pages/SecretsPage';
+import KubeConfigPage from './pages/KubeConfigPage';
 import { NamespaceProvider } from './context/NamespaceContext';
+import { KubeConfigProvider } from './context/KubeConfigContext';
 import ScaleDeploymentModal from './components/Deployments/ScaleDeploymentModal';
 import './App.css';
 
@@ -74,36 +76,39 @@ function App() {
       <MantineProvider theme={theme} defaultColorScheme="light">
         <Notifications />
         <ModalsProvider modals={modals}>
-          <NamespaceProvider>
-            <Router basename={BASE_URL}>
-              <Layout>
-                <Routes>
-                  <Route path="/" element={<DashboardPage />} />
-                  <Route path="/pods" element={<PodsPage />} />
-                  <Route
-                    path="/pods/:namespace/:name"
-                    element={<PodDetailPage />}
-                  />
-                  <Route
-                    path="/pods/:namespace/:name/:tab"
-                    element={<PodDetailPage />}
-                  />
-                  <Route path="/services" element={<ServicesPage />} />
-                  <Route path="/namespaces" element={<NamespacesPage />} />
-                  <Route path="/configmaps" element={<ConfigMapsPage />} />
-                  <Route
-                    path="/serviceaccounts"
-                    element={<ServiceAccountsPage />}
-                  />
-                  <Route path="/deployments" element={<DeploymentsPage />} />
-                  <Route path="/token" element={<TokenPage />} />
-                  <Route path="/secrets" element={<SecretsPage />} />
-                  {/* Redirect any unmatched routes to the dashboard */}
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </Layout>
-            </Router>
-          </NamespaceProvider>
+          <KubeConfigProvider>
+            <NamespaceProvider>
+              <Router basename={BASE_URL}>
+                <Layout>
+                  <Routes>
+                    <Route path="/" element={<DashboardPage />} />
+                    <Route path="/pods" element={<PodsPage />} />
+                    <Route
+                      path="/pods/:namespace/:name"
+                      element={<PodDetailPage />}
+                    />
+                    <Route
+                      path="/pods/:namespace/:name/:tab"
+                      element={<PodDetailPage />}
+                    />
+                    <Route path="/services" element={<ServicesPage />} />
+                    <Route path="/namespaces" element={<NamespacesPage />} />
+                    <Route path="/configmaps" element={<ConfigMapsPage />} />
+                    <Route
+                      path="/serviceaccounts"
+                      element={<ServiceAccountsPage />}
+                    />
+                    <Route path="/deployments" element={<DeploymentsPage />} />
+                    <Route path="/token" element={<TokenPage />} />
+                    <Route path="/secrets" element={<SecretsPage />} />
+                    <Route path="/kubeconfig" element={<KubeConfigPage />} />
+                    {/* Redirect any unmatched routes to the dashboard */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </Layout>
+              </Router>
+            </NamespaceProvider>
+          </KubeConfigProvider>
         </ModalsProvider>
       </MantineProvider>
     </>

@@ -1,68 +1,58 @@
 import axios from 'axios';
+import { getConfigInstance } from './kubeConfigService';
 
 // Add the DEFAULT_NAMESPACE constant at the top of the file
 // Get the default namespace from environment variables
 const DEFAULT_NAMESPACE = process.env.REACT_APP_K8S_NAMESPACE || 'default';
 
-// Base URL for the Kubernetes API
-// When running locally, we'll need to proxy requests to the K8s API
-const API_BASE_URL = '/k8s-api';  // Always use /k8s-api for all environments
+// Function to get the current active config and its axios instance
+const getActiveInstance = () => {
+    // Get active config from localStorage
+    const activeConfigId = localStorage.getItem('k8s_active_config');
+    const savedConfigs = localStorage.getItem('k8s_configs');
 
-// Configure axios with a timeout
-const api = axios.create({
-    baseURL: API_BASE_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
-    timeout: 10000  // 10 second timeout
-});
-
-// Create a separate instance for log requests with a longer timeout
-const logApi = axios.create({
-    baseURL: API_BASE_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
-    timeout: 30000  // 30 second timeout for logs
-});
-
-// Add response interceptor for better error handling
-api.interceptors.response.use(
-    response => response,
-    error => {
-        console.error('API Error:', error.response?.data || error.message);
-        return Promise.reject(error);
+    if (activeConfigId && savedConfigs) {
+        try {
+            const configs = JSON.parse(savedConfigs);
+            const activeConfig = configs.find((c: any) => c.id === activeConfigId);
+            if (activeConfig) {
+                return getConfigInstance(activeConfig);
+            }
+        } catch (error) {
+            console.error('Error getting active config:', error);
+        }
     }
-);
 
-logApi.interceptors.response.use(
-    response => response,
-    error => {
-        console.error('Log API Error:', error.response?.data || error.message);
-        return Promise.reject(error);
-    }
-);
-
-// Add request interceptor to include authentication token
-const addAuthToken = (config: any) => {
-    const token = localStorage.getItem('k8s_auth_token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
+    // Fallback to default proxy setup
+    return axios.create({
+        baseURL: '/k8s-api',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        timeout: 10000
+    });
 };
 
-api.interceptors.request.use(addAuthToken);
-logApi.interceptors.request.use(addAuthToken);
+// Create a separate instance for log requests with a longer timeout
+const getActiveLogInstance = () => {
+    const instance = getActiveInstance();
+    // Clone the instance with longer timeout for logs
+    return axios.create({
+        ...instance.defaults,
+        timeout: 30000
+    });
+};
 
 // Namespaces
 export const getNamespaces = async () => {
+    const api = getActiveInstance();
     const response = await api.get('/api/v1/namespaces');
     return response.data;
 };
 
 // Pods
 export const getPods = async (namespace = DEFAULT_NAMESPACE) => {
+    const api = getActiveInstance();
     const response = await api.get(`/api/v1/namespaces/${namespace}/pods`);
     return response.data;
 };
@@ -90,6 +80,7 @@ export const getPodLogs = async (
     }
 
     try {
+        const logApi = getActiveLogInstance();
         const url = `/api/v1/namespaces/${namespace}/pods/${podName}/log?${params.toString()}`;
         const response = await logApi.get(url);
         return response.data;
@@ -115,20 +106,43 @@ export const streamPodLogs = (
     const controller = new AbortController();
     const { signal } = controller;
 
-    // Build URL with params
-    let url = `${API_BASE_URL}/api/v1/namespaces/${namespace}/pods/${podName}/log?follow=true&tailLines=${tailLines}`;
-    if (container) {
-        url += `&container=${container}`;
+    // Get the active config to determine the base URL and auth
+    const activeConfigId = localStorage.getItem('k8s_active_config');
+    const savedConfigs = localStorage.getItem('k8s_configs');
+
+    let baseURL = '/k8s-api';
+    let headers: Record<string, string> = {};
+
+    if (activeConfigId && savedConfigs) {
+        try {
+            const configs = JSON.parse(savedConfigs);
+            const activeConfig = configs.find((c: any) => c.id === activeConfigId);
+            if (activeConfig && !activeConfig.isDefault) {
+                baseURL = activeConfig.server;
+                // Add authentication headers if available
+                if (activeConfig.config) {
+                    const currentContext = activeConfig.config.contexts.find((ctx: any) =>
+                        ctx.name === activeConfig.config['current-context']
+                    );
+                    if (currentContext) {
+                        const user = activeConfig.config.users.find((u: any) =>
+                            u.name === currentContext.context.user
+                        );
+                        if (user && user.user && user.user.token) {
+                            headers['Authorization'] = `Bearer ${user.user.token}`;
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error getting active config for streaming:', error);
+        }
     }
 
-    // Get any authentication headers that might be in the current session
-    const headers: Record<string, string> = {};
-    if (typeof document !== 'undefined') {
-        // If we're in a browser context, try to get the Authorization header
-        const authToken = localStorage.getItem('k8s_auth_token');
-        if (authToken) {
-            headers['Authorization'] = `Bearer ${authToken}`;
-        }
+    // Build URL with params
+    let url = `${baseURL}/api/v1/namespaces/${namespace}/pods/${podName}/log?follow=true&tailLines=${tailLines}`;
+    if (container) {
+        url += `&container=${container}`;
     }
 
     // Use fetch with streaming response
@@ -136,7 +150,7 @@ export const streamPodLogs = (
         try {
             const response = await fetch(url, {
                 signal,
-                credentials: 'include', // Include cookies in the request
+                credentials: 'include',
                 headers
             });
 
@@ -192,150 +206,201 @@ export const streamPodLogs = (
 };
 
 export const getPod = async (name: string, namespace = DEFAULT_NAMESPACE) => {
+    const api = getActiveInstance();
     const response = await api.get(`/api/v1/namespaces/${namespace}/pods/${name}`);
     return response.data;
 };
 
 export const updatePod = async (name: string, namespace = DEFAULT_NAMESPACE, podYaml: any) => {
+    const api = getActiveInstance();
     const response = await api.put(
         `/api/v1/namespaces/${namespace}/pods/${name}`,
-        podYaml
+        podYaml,
+        {
+            headers: {
+                'Content-Type': 'application/yaml',
+            },
+        }
     );
     return response.data;
 };
 
 export const deletePod = async (name: string, namespace = DEFAULT_NAMESPACE) => {
+    const api = getActiveInstance();
     const response = await api.delete(`/api/v1/namespaces/${namespace}/pods/${name}`);
     return response.data;
 };
 
 export const restartPod = async (name: string, namespace = DEFAULT_NAMESPACE) => {
-    // Kubernetes doesn't have a direct "restart" API
-    // We'll use the deletePod method and let the deployment/statefulset controller recreate it
-    return deletePod(name, namespace);
+    // Restart by deleting the pod (if it's managed by a deployment, it will be recreated)
+    return await deletePod(name, namespace);
 };
 
 // Services
 export const getServices = async (namespace = DEFAULT_NAMESPACE) => {
+    const api = getActiveInstance();
     const response = await api.get(`/api/v1/namespaces/${namespace}/services`);
     return response.data;
 };
 
 export const getService = async (name: string, namespace = DEFAULT_NAMESPACE) => {
+    const api = getActiveInstance();
     const response = await api.get(`/api/v1/namespaces/${namespace}/services/${name}`);
     return response.data;
 };
 
 export const updateService = async (name: string, namespace = DEFAULT_NAMESPACE, serviceYaml: any) => {
+    const api = getActiveInstance();
     const response = await api.put(
         `/api/v1/namespaces/${namespace}/services/${name}`,
-        serviceYaml
+        serviceYaml,
+        {
+            headers: {
+                'Content-Type': 'application/yaml',
+            },
+        }
     );
     return response.data;
 };
 
 export const deleteService = async (name: string, namespace = DEFAULT_NAMESPACE) => {
+    const api = getActiveInstance();
     const response = await api.delete(`/api/v1/namespaces/${namespace}/services/${name}`);
     return response.data;
 };
 
 // Deployments
 export const getDeployments = async (namespace = DEFAULT_NAMESPACE) => {
+    const api = getActiveInstance();
     const response = await api.get(`/apis/apps/v1/namespaces/${namespace}/deployments`);
     return response.data;
 };
 
 export const getDeployment = async (name: string, namespace = DEFAULT_NAMESPACE) => {
+    const api = getActiveInstance();
     const response = await api.get(`/apis/apps/v1/namespaces/${namespace}/deployments/${name}`);
     return response.data;
 };
 
 export const updateDeployment = async (name: string, namespace = DEFAULT_NAMESPACE, deploymentYaml: any) => {
+    const api = getActiveInstance();
     const response = await api.put(
         `/apis/apps/v1/namespaces/${namespace}/deployments/${name}`,
-        deploymentYaml
+        deploymentYaml,
+        {
+            headers: {
+                'Content-Type': 'application/yaml',
+            },
+        }
     );
     return response.data;
 };
 
 export const deleteDeployment = async (name: string, namespace = DEFAULT_NAMESPACE) => {
+    const api = getActiveInstance();
     const response = await api.delete(`/apis/apps/v1/namespaces/${namespace}/deployments/${name}`);
     return response.data;
 };
 
 export const restartDeployment = async (name: string, namespace = DEFAULT_NAMESPACE) => {
-    // To restart a deployment, we can add a unique annotation to force a rolling update
+    const api = getActiveInstance();
+    // Restart deployment by updating the restart annotation
     const deployment = await getDeployment(name, namespace);
+
     if (!deployment.spec.template.metadata.annotations) {
         deployment.spec.template.metadata.annotations = {};
     }
 
-    // Add or update the restart timestamp annotation
     deployment.spec.template.metadata.annotations['kubectl.kubernetes.io/restartedAt'] = new Date().toISOString();
 
-    return updateDeployment(name, namespace, deployment);
+    const response = await api.put(
+        `/apis/apps/v1/namespaces/${namespace}/deployments/${name}`,
+        deployment
+    );
+    return response.data;
 };
 
 // ConfigMaps
 export const getConfigMaps = async (namespace = DEFAULT_NAMESPACE) => {
+    const api = getActiveInstance();
     const response = await api.get(`/api/v1/namespaces/${namespace}/configmaps`);
     return response.data;
 };
 
 export const getConfigMap = async (name: string, namespace = DEFAULT_NAMESPACE) => {
+    const api = getActiveInstance();
     const response = await api.get(`/api/v1/namespaces/${namespace}/configmaps/${name}`);
     return response.data;
 };
 
 export const updateConfigMap = async (name: string, namespace = DEFAULT_NAMESPACE, configMapYaml: any) => {
+    const api = getActiveInstance();
     const response = await api.put(
         `/api/v1/namespaces/${namespace}/configmaps/${name}`,
-        configMapYaml
+        configMapYaml,
+        {
+            headers: {
+                'Content-Type': 'application/yaml',
+            },
+        }
     );
     return response.data;
 };
 
 export const deleteConfigMap = async (name: string, namespace = DEFAULT_NAMESPACE) => {
+    const api = getActiveInstance();
     const response = await api.delete(`/api/v1/namespaces/${namespace}/configmaps/${name}`);
     return response.data;
 };
 
-// ServiceAccounts
+// Service Accounts
 export const getServiceAccounts = async (namespace = DEFAULT_NAMESPACE) => {
+    const api = getActiveInstance();
     const response = await api.get(`/api/v1/namespaces/${namespace}/serviceaccounts`);
     return response.data;
 };
 
 export const getServiceAccount = async (name: string, namespace = DEFAULT_NAMESPACE) => {
+    const api = getActiveInstance();
     const response = await api.get(`/api/v1/namespaces/${namespace}/serviceaccounts/${name}`);
     return response.data;
 };
 
 export const updateServiceAccount = async (name: string, namespace = DEFAULT_NAMESPACE, serviceAccountYaml: any) => {
+    const api = getActiveInstance();
     const response = await api.put(
         `/api/v1/namespaces/${namespace}/serviceaccounts/${name}`,
-        serviceAccountYaml
+        serviceAccountYaml,
+        {
+            headers: {
+                'Content-Type': 'application/yaml',
+            },
+        }
     );
     return response.data;
 };
 
 export const deleteServiceAccount = async (name: string, namespace = DEFAULT_NAMESPACE) => {
+    const api = getActiveInstance();
     const response = await api.delete(`/api/v1/namespaces/${namespace}/serviceaccounts/${name}`);
     return response.data;
 };
 
 // Secrets
 export const getSecrets = async (namespace = DEFAULT_NAMESPACE) => {
+    const api = getActiveInstance();
     const response = await api.get(`/api/v1/namespaces/${namespace}/secrets`);
     return response.data;
 };
 
 export const getSecret = async (name: string, namespace = DEFAULT_NAMESPACE) => {
+    const api = getActiveInstance();
     const response = await api.get(`/api/v1/namespaces/${namespace}/secrets/${name}`);
     return response.data;
 };
 
 export const createSecret = async (namespace = DEFAULT_NAMESPACE, secretData: any) => {
+    const api = getActiveInstance();
     const response = await api.post(
         `/api/v1/namespaces/${namespace}/secrets`,
         secretData
@@ -344,67 +409,85 @@ export const createSecret = async (namespace = DEFAULT_NAMESPACE, secretData: an
 };
 
 export const updateSecret = async (name: string, namespace = DEFAULT_NAMESPACE, secretYaml: any) => {
+    const api = getActiveInstance();
     const response = await api.put(
         `/api/v1/namespaces/${namespace}/secrets/${name}`,
-        secretYaml
+        secretYaml,
+        {
+            headers: {
+                'Content-Type': 'application/yaml',
+            },
+        }
     );
     return response.data;
 };
 
 export const deleteSecret = async (name: string, namespace = DEFAULT_NAMESPACE) => {
+    const api = getActiveInstance();
     const response = await api.delete(`/api/v1/namespaces/${namespace}/secrets/${name}`);
     return response.data;
 };
 
-// Scale Deployments
+// Scale deployment
 export const scaleDeployment = async (name: string, namespace = DEFAULT_NAMESPACE, replicas: number) => {
-    // First get the current deployment to preserve other properties
-    const deployment = await getDeployment(name, namespace);
+    const api = getActiveInstance();
+    const scalePayload = {
+        spec: {
+            replicas: replicas
+        }
+    };
 
-    // Update the replica count
-    deployment.spec.replicas = replicas;
-
-    // Update the deployment
-    const response = await api.put(
-        `/apis/apps/v1/namespaces/${namespace}/deployments/${name}`,
-        deployment
+    const response = await api.patch(
+        `/apis/apps/v1/namespaces/${namespace}/deployments/${name}/scale`,
+        scalePayload,
+        {
+            headers: {
+                'Content-Type': 'application/merge-patch+json',
+            },
+        }
     );
-
     return response.data;
 };
 
 // Nodes
 export const getNodes = async () => {
+    const api = getActiveInstance();
     const response = await api.get('/api/v1/nodes');
     return response.data;
 };
 
 export const getNode = async (name: string) => {
+    const api = getActiveInstance();
     const response = await api.get(`/api/v1/nodes/${name}`);
     return response.data;
 };
 
 export const getNodeMetrics = async () => {
+    const api = getActiveInstance();
     try {
-        // Call a backend API endpoint that will execute kubectl top node
-        const response = await api.get('/api/kubectl/top/node');
+        const response = await api.get('/apis/metrics.k8s.io/v1beta1/nodes');
         return response.data;
-    } catch (error) {
-        console.error('Error fetching node metrics:', error);
-        // Return empty result on error
-        return { items: [] };
+    } catch (error: any) {
+        // If metrics server is not available, return empty data
+        if (error.response?.status === 404) {
+            return { items: [] };
+        }
+        throw error;
     }
 };
 
-// YAML Operations
+// Generic YAML operations
 export const getResourceYaml = async (
     kind: string,
     name: string,
     namespace: string
 ): Promise<string> => {
-    const response = await api.get(
-        `/api/resources/${kind}/${namespace}/${name}/yaml`
-    );
+    const api = getActiveInstance();
+    const response = await api.get(`/api/v1/namespaces/${namespace}/${kind}s/${name}`, {
+        headers: {
+            'Accept': 'application/yaml',
+        },
+    });
     return response.data;
 };
 
@@ -414,11 +497,17 @@ export const updateResourceYaml = async (
     namespace: string,
     yaml: string
 ): Promise<any> => {
+    const api = getActiveInstance();
     const response = await api.put(
-        `/api/resources/${kind}/${namespace}/${name}/yaml`,
-        { yaml }
+        `/api/v1/namespaces/${namespace}/${kind}s/${name}`,
+        yaml,
+        {
+            headers: {
+                'Content-Type': 'application/yaml',
+            },
+        }
     );
     return response.data;
 };
 
-export default api; 
+export default getActiveInstance(); 

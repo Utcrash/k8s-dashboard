@@ -3,6 +3,7 @@ import { Group, Title, Box, Flex, ActionIcon, Tooltip } from '@mantine/core';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { IconArrowLeft } from '@tabler/icons-react';
 import GlobalNamespaceSelector from './GlobalNamespaceSelector';
+import ClusterSelector from './ClusterSelector';
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
@@ -48,7 +49,10 @@ const Header: React.FC = () => {
           Kubernetes Dashboard
         </Title>
       </Group>
-      <GlobalNamespaceSelector />
+      <Group gap="lg">
+        <ClusterSelector />
+        <GlobalNamespaceSelector />
+      </Group>
     </Box>
   );
 };

@@ -2,11 +2,29 @@
 
 A React-based web UI for monitoring and managing Kubernetes resources with features like:
 
+- **Multi-cluster support**: Connect to multiple Kubernetes clusters using kubeconfig files
 - View pods, services, deployments, configmaps, and service accounts
 - Filter logs with search functionality
 - Real-time log viewing with pause/resume capability
 - Scroll-to-bottom functionality for logs
 - Namespace selection for viewing resources
+- Cluster configuration management
+
+## New Multi-Cluster Feature
+
+The dashboard now supports connecting to multiple Kubernetes clusters without requiring kubectl proxy on each server. You can:
+
+1. **Add kubeconfig files**: Paste your kubeconfig content directly in the UI
+2. **Switch between clusters**: Use the cluster selector in the header
+3. **Manage configurations**: Add, remove, and organize your cluster connections
+4. **Fallback support**: If no configs are added, it works exactly as before with kubectl proxy
+
+### How it works
+
+- **Default mode**: Uses kubectl proxy on port 8001 (backward compatible)
+- **Multi-cluster mode**: Parses kubeconfig files and connects directly to cluster APIs
+- **Authentication**: Supports bearer tokens, basic auth, and client certificates
+- **CORS handling**: Includes a proxy server for better browser compatibility
 
 ## Docker Hub Repository
 
@@ -16,10 +34,12 @@ The dashboard image is available on Docker Hub:
 ## Prerequisites
 
 - Docker installed on your server
-- kubectl configured with access to your Kubernetes cluster
+- kubectl configured with access to your Kubernetes cluster (for default mode)
 - Nginx or another web server for SSL termination (optional)
 
 ## Setup
+
+### Quick Start (Default Mode)
 
 1. Clone the repository and install dependencies:
 
@@ -44,6 +64,38 @@ npm start
 ```
 
 4. Open [http://localhost:3000](http://localhost:3000) to view the dashboard in your browser.
+
+### Multi-Cluster Setup
+
+1. Follow steps 1 and 3 from Quick Start (skip kubectl proxy)
+
+2. Navigate to "Cluster Config" in the sidebar
+
+3. Click "Add Configuration" and paste your kubeconfig content
+
+4. Switch between clusters using the cluster selector in the header
+
+### Using the Proxy Server (Recommended for Production)
+
+For better CORS handling and authentication support:
+
+1. Install proxy server dependencies:
+
+```bash
+cd proxy-server
+npm install
+```
+
+2. Start the proxy server:
+
+```bash
+npm start
+```
+
+3. The proxy server runs on port 3001 and handles:
+   - CORS issues
+   - Authentication with different cluster types
+   - Multiple kubeconfig routing
 
 ## Configuration
 
@@ -90,6 +142,8 @@ kubectl apply -f kubernetes/deployment.yaml
 - The dashboard should be deployed behind proper authentication and authorization
 - Consider using RBAC to limit what resources the dashboard can access
 - For production use, implement proper TLS/SSL
+- Store kubeconfig files securely and avoid exposing sensitive credentials
+- Use service accounts with limited permissions when possible
 
 ## Development
 
@@ -97,12 +151,27 @@ kubectl apply -f kubernetes/deployment.yaml
 - `npm test` - Runs tests
 - `npm run build` - Builds for production
 
-## Future Enhancements
+## Multi-Cluster Features
 
-- Add support for more Kubernetes resources
-- Implement edit and delete functionality
-- Add metrics visualization
-- Support dark/light theme toggle
+### Cluster Configuration Management
+
+- **Add clusters**: Paste kubeconfig YAML content
+- **Remove clusters**: Delete configurations (except default)
+- **Switch clusters**: Use the header dropdown
+- **View details**: See server URLs and contexts
+
+### Supported Authentication Methods
+
+- **Bearer tokens**: Most common for service accounts
+- **Basic authentication**: Username/password
+- **Client certificates**: Requires proxy server setup
+- **kubectl proxy**: Default fallback method
+
+### Limitations
+
+- Direct browser connections may face CORS restrictions
+- Client certificate authentication requires backend proxy
+- Some clusters may require additional network configuration
 
 ## Environment Variables
 
@@ -110,7 +179,7 @@ The application uses environment variables for configuration. Create a `.env` fi
 
 ```
 # Default Kubernetes namespace to use
-REACT_APP_K8S_NAMESPACE=appveen
+REACT_APP_K8S_NAMESPACE=default
 
 # Kubernetes API proxy URL (optional, defaults to http://localhost:8001)
 # REACT_APP_API_URL=http://localhost:8001
@@ -121,9 +190,9 @@ REACT_APP_K8S_NAMESPACE=appveen
 
 You can adjust these values based on your Kubernetes setup.
 
-### Step 1: Start kubectl proxy
+### Step 1: Start kubectl proxy (Optional)
 
-The dashboard requires access to the Kubernetes API. Start kubectl proxy as a background service:
+If you're not using kubeconfig files, the dashboard requires access to the Kubernetes API. Start kubectl proxy as a background service:
 
 ```bash
 # Run with nohup (persists until server restart)
@@ -177,3 +246,19 @@ location /k8s-api/ {
 
 - With Nginx: https://your-domain.com/k8s/
 - Direct access: http://your-server-ip:80/k8s/
+
+## Troubleshooting
+
+### Common Issues
+
+1. **CORS errors**: Use the proxy server or ensure proper CORS configuration
+2. **Authentication failures**: Verify kubeconfig credentials and permissions
+3. **Network timeouts**: Check cluster connectivity and firewall rules
+4. **Certificate errors**: Ensure proper TLS configuration for HTTPS clusters
+
+### Getting Help
+
+- Check browser console for error messages
+- Verify kubeconfig file format and credentials
+- Test cluster connectivity using kubectl
+- Review proxy server logs for authentication issues
