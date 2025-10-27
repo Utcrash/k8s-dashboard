@@ -13,33 +13,39 @@ import {
 import { IconArrowLeft } from '@tabler/icons-react';
 import PodDetail from '../components/Pods/PodDetail';
 import { getPod } from '../services/k8sService';
+import { useNamespace } from '../context/NamespaceContext';
 
 // Get the default namespace from environment variables
 const DEFAULT_NAMESPACE = process.env.REACT_APP_K8S_NAMESPACE || 'default';
 
 const PodDetailPage: React.FC = () => {
   const {
-    namespace,
+    namespace: routeNamespace,
+    podNamespace,
     name,
     tab = 'details',
-  } = useParams<{ namespace: string; name: string; tab?: string }>();
+  } = useParams<{ namespace: string; podNamespace: string; name: string; tab?: string }>();
   const navigate = useNavigate();
+  const { globalNamespace } = useNamespace();
   const [pod, setPod] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Use podNamespace from route params (the actual namespace of the pod)
+  const namespace = podNamespace || DEFAULT_NAMESPACE;
+
   useEffect(() => {
     fetchPodData();
-  }, [namespace, name]);
+  }, [podNamespace, name]);
 
   const fetchPodData = async () => {
-    if (!namespace || !name) return;
+    if (!podNamespace || !name) return;
 
     setIsLoading(true);
     setError(null);
 
     try {
-      const podData = await getPod(name, namespace);
+      const podData = await getPod(name, podNamespace);
       setPod(podData);
     } catch (err: any) {
       console.error('Error fetching pod:', err);
@@ -52,14 +58,14 @@ const PodDetailPage: React.FC = () => {
   };
 
   const handleBack = () => {
-    navigate('/pods');
+    navigate(`/${globalNamespace}/pods`);
   };
 
   const renderBreadcrumbs = () => {
     return (
       <Breadcrumbs mb="md">
-        <Anchor onClick={() => navigate('/')}>Dashboard</Anchor>
-        <Anchor onClick={() => navigate('/pods')}>Pods</Anchor>
+        <Anchor onClick={() => navigate(`/${globalNamespace}/dashboard`)}>Dashboard</Anchor>
+        <Anchor onClick={() => navigate(`/${globalNamespace}/pods`)}>Pods</Anchor>
         <span>{name}</span>
       </Breadcrumbs>
     );

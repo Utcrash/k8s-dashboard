@@ -42,7 +42,7 @@ const PodsPage: React.FC = () => {
 
   const handlePodSelect = (pod: any) => {
     // Navigate to the pod detail page using the new URL structure
-    navigate(`/pods/${pod.metadata.namespace}/${pod.metadata.name}`);
+    navigate(`/${globalNamespace}/pods/${pod.metadata.namespace}/${pod.metadata.name}`);
   };
 
   const updateAndRestartPod = async (podName: string, podYaml: any) => {

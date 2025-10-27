@@ -19,7 +19,6 @@ import NamespacesPage from './pages/NamespacesPage';
 import ConfigMapsPage from './pages/ConfigMapsPage';
 import ServiceAccountsPage from './pages/ServiceAccountsPage';
 import DeploymentsPage from './pages/DeploymentsPage';
-import TokenPage from './pages/TokenPage';
 import SecretsPage from './pages/SecretsPage';
 import { NamespaceProvider } from './context/NamespaceContext';
 import ScaleDeploymentModal from './components/Deployments/ScaleDeploymentModal';
@@ -78,28 +77,34 @@ function App() {
             <Router basename={BASE_URL}>
               <Layout>
                 <Routes>
-                  <Route path="/" element={<DashboardPage />} />
-                  <Route path="/pods" element={<PodsPage />} />
+                  {/* Redirect root to default namespace */}
+                  <Route path="/" element={<Navigate to="/default/dashboard" replace />} />
+                  
+                  {/* Namespace-based routes */}
+                  <Route path="/:namespace/dashboard" element={<DashboardPage />} />
+                  <Route path="/:namespace/pods" element={<PodsPage />} />
                   <Route
-                    path="/pods/:namespace/:name"
+                    path="/:namespace/pods/:podNamespace/:name"
                     element={<PodDetailPage />}
                   />
                   <Route
-                    path="/pods/:namespace/:name/:tab"
+                    path="/:namespace/pods/:podNamespace/:name/:tab"
                     element={<PodDetailPage />}
                   />
-                  <Route path="/services" element={<ServicesPage />} />
-                  <Route path="/namespaces" element={<NamespacesPage />} />
-                  <Route path="/configmaps" element={<ConfigMapsPage />} />
+                  <Route path="/:namespace/services" element={<ServicesPage />} />
+                  <Route path="/:namespace/configmaps" element={<ConfigMapsPage />} />
                   <Route
-                    path="/serviceaccounts"
+                    path="/:namespace/serviceaccounts"
                     element={<ServiceAccountsPage />}
                   />
-                  <Route path="/deployments" element={<DeploymentsPage />} />
-                  <Route path="/token" element={<TokenPage />} />
-                  <Route path="/secrets" element={<SecretsPage />} />
-                  {/* Redirect any unmatched routes to the dashboard */}
-                  <Route path="*" element={<Navigate to="/" replace />} />
+                  <Route path="/:namespace/deployments" element={<DeploymentsPage />} />
+                  <Route path="/:namespace/secrets" element={<SecretsPage />} />
+                  
+                  {/* Non-namespace routes */}
+                  <Route path="/namespaces" element={<NamespacesPage />} />
+                  
+                  {/* Redirect any unmatched routes to default namespace dashboard */}
+                  <Route path="*" element={<Navigate to="/default/dashboard" replace />} />
                 </Routes>
               </Layout>
             </Router>

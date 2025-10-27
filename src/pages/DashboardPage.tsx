@@ -14,17 +14,8 @@ import {
   SimpleGrid,
   Flex,
   Grid,
-  Transition,
-  Space,
-  Avatar,
   Badge,
-  ActionIcon,
-  Tooltip,
   Progress,
-  RingProgress,
-  Button,
-  Center,
-  Alert,
 } from '@mantine/core';
 import { Link } from 'react-router-dom';
 import {
@@ -37,11 +28,6 @@ import {
   IconUserShield,
   IconCheck,
   IconAlertTriangle,
-  IconCpu,
-  IconDeviceDesktopAnalytics,
-  IconDatabase,
-  IconRefresh,
-  IconAlertCircle,
 } from '@tabler/icons-react';
 import { useNamespace } from '../context/NamespaceContext';
 import {
@@ -49,10 +35,7 @@ import {
   getPods,
   getServices,
   getDeployments,
-  getNodeMetrics,
-  getNodes,
 } from '../services/k8sService';
-import axios from 'axios';
 
 // Get the default namespace from environment variables
 const DEFAULT_NAMESPACE = process.env.REACT_APP_K8S_NAMESPACE || 'default';
@@ -68,61 +51,6 @@ interface ResourceCounts {
   readyPercentage: number;
 }
 
-interface NodeMetrics {
-  name: string;
-  cpu: {
-    usage: number;
-    capacity: number;
-    percentage: number;
-  };
-  memory: {
-    usage: number;
-    capacity: number;
-    percentage: number;
-  };
-}
-
-// Helper function to format memory in a human-readable way
-const formatMemory = (bytes: number): string => {
-  if (bytes < 1024) return bytes + ' B';
-  else if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
-  else if (bytes < 1024 * 1024 * 1024)
-    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
-  else return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
-};
-
-// Helper function to parse K8s CPU values like "100m" into millicores
-const parseCpuValue = (value: string): number => {
-  if (value.endsWith('m')) {
-    return parseInt(value.slice(0, -1), 10);
-  }
-  // If not in millicores format, assume it's in cores
-  return parseFloat(value) * 1000;
-};
-
-// Helper function to parse K8s memory values like "1Gi" into bytes
-const parseMemoryValue = (value: string): number => {
-  const units: Record<string, number> = {
-    Ki: 1024,
-    Mi: 1024 * 1024,
-    Gi: 1024 * 1024 * 1024,
-    Ti: 1024 * 1024 * 1024 * 1024,
-    K: 1000,
-    M: 1000 * 1000,
-    G: 1000 * 1000 * 1000,
-    T: 1000 * 1000 * 1000 * 1000,
-  };
-
-  // Check for unit suffix
-  for (const [suffix, multiplier] of Object.entries(units)) {
-    if (value.endsWith(suffix)) {
-      return parseFloat(value.slice(0, -suffix.length)) * multiplier;
-    }
-  }
-
-  // Default to bytes if no suffix
-  return parseFloat(value);
-};
 
 const DashboardPage: React.FC = () => {
   const { globalNamespace } = useNamespace();
@@ -138,19 +66,12 @@ const DashboardPage: React.FC = () => {
     readyPercentage: 0,
   });
   const [recentPods, setRecentPods] = useState<any[]>([]);
-  const [clusterMetrics, setClusterMetrics] = useState<NodeMetrics[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isMetricsLoading, setIsMetricsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [metricsError, setMetricsError] = useState<string | null>(null);
-  const [nodeMetrics, setNodeMetrics] = useState<NodeMetrics[]>([]);
-  const [rawMetricsResponse, setRawMetricsResponse] = useState<string>('');
-  const [showRawMetrics, setShowRawMetrics] = useState(false);
 
   // Fetch namespaces on initial load
   useEffect(() => {
     fetchNamespaces();
-    fetchClusterMetrics();
   }, []);
 
   // Fetch resources when namespace changes
@@ -166,22 +87,6 @@ const DashboardPage: React.FC = () => {
     } catch (err) {
       console.error('Error fetching namespaces:', err);
       setError('Failed to fetch namespaces');
-    }
-  };
-
-  const fetchClusterMetrics = async () => {
-    setIsMetricsLoading(true);
-    try {
-      const result = await getNodeMetrics();
-      setNodeMetrics(result.items || []);
-      setMetricsError(null);
-    } catch (error) {
-      console.error('Failed to fetch node metrics', error);
-      setMetricsError(
-        'Failed to fetch metrics. Please ensure metrics-server is installed.'
-      );
-    } finally {
-      setIsMetricsLoading(false);
     }
   };
 
@@ -362,172 +267,6 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  // Add a helper function to test the metrics connection directly
-  const testMetricsApiConnection = async () => {
-    setIsMetricsLoading(true);
-    try {
-      console.log('Testing metrics API connection...');
-
-      // Try both direct fetch and axios approaches
-      const results = [];
-
-      // Variables to track response objects
-      let axiosResponse = null;
-      let fetchResponse = null;
-
-      // Method 1: Using axios with specific headers
-      try {
-        console.log('Testing with axios...');
-        axiosResponse = await axios.get(
-          '/k8s-api/apis/metrics.k8s.io/v1beta1/nodes',
-          {
-            headers: {
-              Accept: 'application/json',
-              Connection: 'keep-alive',
-              // Add auth token if available
-              ...(localStorage.getItem('k8s_auth_token')
-                ? {
-                    Authorization: `Bearer ${localStorage.getItem(
-                      'k8s_auth_token'
-                    )}`,
-                  }
-                : {}),
-            },
-          }
-        );
-
-        console.log('Axios response:', axiosResponse.status);
-        results.push(
-          `Axios method: ${axiosResponse.status} ${axiosResponse.statusText}`
-        );
-
-        // If we got a successful response, use it
-        setRawMetricsResponse(JSON.stringify(axiosResponse.data, null, 2));
-
-        // Check if we have items
-        if (axiosResponse.data.items && axiosResponse.data.items.length > 0) {
-          console.log(
-            `Found ${axiosResponse.data.items.length} node metrics items`
-          );
-          // Process the metrics data
-          const processedMetrics = processMetricsData(axiosResponse.data);
-          setNodeMetrics(processedMetrics);
-          setMetricsError(null);
-          return;
-        }
-      } catch (axiosError: any) {
-        results.push(`Axios error: ${axiosError.message}`);
-        console.error('Axios test failed:', axiosError);
-      }
-
-      // Method 2: Using standard fetch
-      try {
-        console.log('Testing with fetch...');
-        fetchResponse = await fetch(
-          '/k8s-api/apis/metrics.k8s.io/v1beta1/nodes',
-          {
-            method: 'GET',
-            headers: {
-              Accept: 'application/json',
-              // Add auth token if available
-              ...(localStorage.getItem('k8s_auth_token')
-                ? {
-                    Authorization: `Bearer ${localStorage.getItem(
-                      'k8s_auth_token'
-                    )}`,
-                  }
-                : {}),
-            },
-          }
-        );
-
-        console.log('Fetch response status:', fetchResponse.status);
-        results.push(
-          `Fetch method: ${fetchResponse.status} ${fetchResponse.statusText}`
-        );
-
-        // Get response as text
-        const responseText = await fetchResponse.text();
-        if (!axiosResponse) {
-          setRawMetricsResponse(responseText);
-        }
-
-        // Try to parse JSON
-        try {
-          const jsonResponse = JSON.parse(responseText);
-          if (
-            !axiosResponse &&
-            jsonResponse.items &&
-            jsonResponse.items.length > 0
-          ) {
-            console.log(
-              `Found ${jsonResponse.items.length} node metrics items`
-            );
-            // Process the metrics data
-            const processedMetrics = processMetricsData(jsonResponse);
-            setNodeMetrics(processedMetrics);
-            setMetricsError(null);
-          }
-        } catch (e) {
-          results.push('Response is not valid JSON');
-        }
-      } catch (fetchError: any) {
-        results.push(`Fetch error: ${fetchError.message}`);
-        console.error('Fetch test failed:', fetchError);
-      }
-
-      // Show the results of our tests
-      if (!axiosResponse && !fetchResponse) {
-        setRawMetricsResponse(`Test Results:\n${results.join('\n')}`);
-      }
-    } catch (error: any) {
-      console.error('Test metrics API connection error:', error);
-      setRawMetricsResponse(`Error: ${error.message || String(error)}`);
-    } finally {
-      setIsMetricsLoading(false);
-    }
-  };
-
-  // Helper function to process metrics data
-  const processMetricsData = (metricsResponse: any) => {
-    if (!metricsResponse.items) return [];
-
-    return metricsResponse.items.map((metric: any) => {
-      // Extract CPU usage
-      const cpuUsage = parseCpuValue(metric.usage?.cpu || '0');
-
-      // Extract memory usage
-      const memoryUsage = parseMemoryValue(metric.usage?.memory || '0');
-
-      // For capacity, we would ideally get this from the node object
-      // As a fallback, estimate capacity based on usage (this is just for testing)
-      const cpuCapacity = cpuUsage * 2; // Assume 50% utilization for testing
-      const memoryCapacity = memoryUsage * 2; // Assume 50% utilization for testing
-
-      // Calculate percentages
-      const cpuPercentage =
-        cpuCapacity > 0 ? Math.min(100, (cpuUsage / cpuCapacity) * 100) : 0;
-      const memoryPercentage =
-        memoryCapacity > 0
-          ? Math.min(100, (memoryUsage / memoryCapacity) * 100)
-          : 0;
-
-      return {
-        name: metric.metadata.name,
-        cpu: {
-          usage: cpuUsage,
-          capacity: cpuCapacity,
-          percentage: cpuPercentage,
-        },
-        memory: {
-          usage: memoryUsage,
-          capacity: memoryCapacity,
-          percentage: memoryPercentage,
-        },
-      };
-    });
-  };
-
   return (
     <Container size="xl" p="md">
       <Paper p="md" withBorder radius="md" shadow="sm" mb="xl">
@@ -566,274 +305,6 @@ const DashboardPage: React.FC = () => {
       )}
 
       <Grid gutter="xl" mb="xl">
-        {/* Cluster Metrics - kubectl top node style */}
-        <Grid.Col span={12}>
-          <Card withBorder shadow="sm" radius="md">
-            <Card.Section
-              p="md"
-              style={{
-                background: 'linear-gradient(to right, #f0f6ff, #e6f9ff)',
-                borderBottom: '1px solid #e6f0fa',
-              }}
-            >
-              <Group justify="apart">
-                <Group>
-                  <Title order={4}>Node Utilization</Title>
-                  <Text size="sm" c="dimmed" style={{ marginLeft: '8px' }}>
-                    (kubectl top node)
-                  </Text>
-                </Group>
-                <Group>
-                  <Button
-                    variant="subtle"
-                    leftSection={<IconDeviceDesktopAnalytics size={16} />}
-                    onClick={() => {
-                      testMetricsApiConnection();
-                      setShowRawMetrics(!showRawMetrics);
-                    }}
-                    size="xs"
-                  >
-                    {showRawMetrics ? 'Hide Debug Info' : 'Debug API'}
-                  </Button>
-                  <Button
-                    variant="light"
-                    leftSection={<IconRefresh size={16} />}
-                    onClick={fetchClusterMetrics}
-                    loading={isMetricsLoading}
-                  >
-                    Refresh
-                  </Button>
-                </Group>
-              </Group>
-            </Card.Section>
-            <Card.Section p="lg">
-              {/* Debug panel for raw metrics response */}
-              {showRawMetrics && (
-                <Paper
-                  withBorder
-                  p="xs"
-                  mt="md"
-                  style={{ backgroundColor: '#f8f9fa' }}
-                >
-                  <Text size="xs" fw={700}>
-                    Debug Information:
-                  </Text>
-                  <Text size="xs">
-                    API URL: /k8s-api/apis/metrics.k8s.io/v1beta1/nodes
-                  </Text>
-                  <Text size="xs" mb="xs">
-                    Response:
-                  </Text>
-                  <div
-                    style={{
-                      maxHeight: '200px',
-                      overflow: 'auto',
-                      padding: '8px',
-                      backgroundColor: '#2a2a2a',
-                      borderRadius: '4px',
-                      fontFamily: 'monospace',
-                    }}
-                  >
-                    <Text
-                      size="xs"
-                      ff="monospace"
-                      style={{ whiteSpace: 'pre-wrap', color: '#ffffff' }}
-                    >
-                      {rawMetricsResponse ||
-                        'No response yet. Click "Debug API" to test.'}
-                    </Text>
-                  </div>
-                </Paper>
-              )}
-
-              {isMetricsLoading ? (
-                <Center p="xl">
-                  <Loader />
-                </Center>
-              ) : metricsError ? (
-                <Alert
-                  icon={<IconAlertCircle size={16} />}
-                  title="Metrics Unavailable"
-                  color="orange"
-                  mt="md"
-                >
-                  {metricsError}
-                  <Button
-                    variant="light"
-                    size="xs"
-                    mt="xs"
-                    onClick={() =>
-                      window.open(
-                        'https://github.com/kubernetes-sigs/metrics-server',
-                        '_blank'
-                      )
-                    }
-                  >
-                    Install Metrics Server
-                  </Button>
-                </Alert>
-              ) : nodeMetrics.length === 0 ? (
-                <Alert
-                  icon={<IconAlertCircle size={16} />}
-                  title="No Metrics Available"
-                  color="blue"
-                  mt="md"
-                >
-                  No metrics data available. Please ensure metrics-server is
-                  installed and running in your cluster.
-                  <Button
-                    variant="light"
-                    size="xs"
-                    mt="xs"
-                    onClick={() =>
-                      window.open(
-                        'https://github.com/kubernetes-sigs/metrics-server',
-                        '_blank'
-                      )
-                    }
-                  >
-                    Install Metrics Server
-                  </Button>
-                </Alert>
-              ) : (
-                <Box>
-                  <Box
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns:
-                        'minmax(200px, 1fr) repeat(4, minmax(100px, 1fr))',
-                      borderBottom: '1px solid #eee',
-                      padding: '0 0 10px 0',
-                      marginBottom: '10px',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    <Text fw={700} size="sm">
-                      NODE
-                    </Text>
-                    <Text fw={700} size="sm" ta="right">
-                      CPU (cores)
-                    </Text>
-                    <Text fw={700} size="sm" ta="right">
-                      CPU%
-                    </Text>
-                    <Text fw={700} size="sm" ta="right">
-                      MEMORY
-                    </Text>
-                    <Text fw={700} size="sm" ta="right">
-                      MEMORY%
-                    </Text>
-                  </Box>
-                  {nodeMetrics.map((node) => (
-                    <Box key={node.name} mb="xl">
-                      <Box
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns:
-                            'minmax(200px, 1fr) repeat(4, minmax(100px, 1fr))',
-                          padding: '8px 0',
-                        }}
-                      >
-                        <Text fw={500} size="sm" truncate>
-                          {node.name}
-                        </Text>
-                        <Text size="sm" ta="right">
-                          {(node.cpu.usage / 1000).toFixed(2)}
-                        </Text>
-                        <Text
-                          size="sm"
-                          ta="right"
-                          c={
-                            node.cpu.percentage > 90
-                              ? 'red'
-                              : node.cpu.percentage > 70
-                              ? 'orange'
-                              : 'inherit'
-                          }
-                          fw={node.cpu.percentage > 70 ? 600 : 400}
-                        >
-                          {Math.round(node.cpu.percentage)}%
-                        </Text>
-                        <Text size="sm" ta="right">
-                          {formatMemory(node.memory.usage)}
-                        </Text>
-                        <Text
-                          size="sm"
-                          ta="right"
-                          c={
-                            node.memory.percentage > 90
-                              ? 'red'
-                              : node.memory.percentage > 70
-                              ? 'orange'
-                              : 'inherit'
-                          }
-                          fw={node.memory.percentage > 70 ? 600 : 400}
-                        >
-                          {Math.round(node.memory.percentage)}%
-                        </Text>
-                      </Box>
-
-                      {/* CPU Bar */}
-                      <Box mb="sm">
-                        <Group justify="space-between" mb={5}>
-                          <Text size="xs" c="dimmed">
-                            CPU
-                          </Text>
-                          <Text size="xs" c="dimmed">
-                            {(node.cpu.usage / 1000).toFixed(2)} /{' '}
-                            {(node.cpu.capacity / 1000).toFixed(2)} cores
-                          </Text>
-                        </Group>
-                        <Progress
-                          value={node.cpu.percentage}
-                          color={
-                            node.cpu.percentage > 90
-                              ? 'red'
-                              : node.cpu.percentage > 70
-                              ? 'orange'
-                              : 'blue'
-                          }
-                          size="md"
-                          radius="xs"
-                          striped={node.cpu.percentage > 80}
-                          animated={node.cpu.percentage > 80}
-                        />
-                      </Box>
-
-                      {/* Memory Bar */}
-                      <Box>
-                        <Group justify="space-between" mb={5}>
-                          <Text size="xs" c="dimmed">
-                            Memory
-                          </Text>
-                          <Text size="xs" c="dimmed">
-                            {formatMemory(node.memory.usage)} /{' '}
-                            {formatMemory(node.memory.capacity)}
-                          </Text>
-                        </Group>
-                        <Progress
-                          value={node.memory.percentage}
-                          color={
-                            node.memory.percentage > 90
-                              ? 'red'
-                              : node.memory.percentage > 70
-                              ? 'orange'
-                              : 'green'
-                          }
-                          size="md"
-                          radius="xs"
-                          striped={node.memory.percentage > 80}
-                          animated={node.memory.percentage > 80}
-                        />
-                      </Box>
-                    </Box>
-                  ))}
-                </Box>
-              )}
-            </Card.Section>
-          </Card>
-        </Grid.Col>
-
         {/* Resource Stats */}
         <Grid.Col span={{ base: 12, md: 8 }}>
           <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
@@ -1047,7 +518,7 @@ const DashboardPage: React.FC = () => {
             </Card.Section>
             <Card.Section p="lg">
               <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
-                <Link to="/pods" style={{ textDecoration: 'none' }}>
+                <Link to={`/${globalNamespace}/pods`} style={{ textDecoration: 'none' }}>
                   <Paper
                     withBorder
                     p="md"
@@ -1069,7 +540,7 @@ const DashboardPage: React.FC = () => {
                     </Group>
                   </Paper>
                 </Link>
-                <Link to="/services" style={{ textDecoration: 'none' }}>
+                <Link to={`/${globalNamespace}/services`} style={{ textDecoration: 'none' }}>
                   <Paper
                     withBorder
                     p="md"
@@ -1091,7 +562,7 @@ const DashboardPage: React.FC = () => {
                     </Group>
                   </Paper>
                 </Link>
-                <Link to="/deployments" style={{ textDecoration: 'none' }}>
+                <Link to={`/${globalNamespace}/deployments`} style={{ textDecoration: 'none' }}>
                   <Paper
                     withBorder
                     p="md"

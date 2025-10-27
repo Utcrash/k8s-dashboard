@@ -6,8 +6,10 @@ const DEFAULT_NAMESPACE = process.env.REACT_APP_K8S_NAMESPACE || 'default';
 
 interface NamespaceContextType {
   globalNamespace: string;
-  setGlobalNamespace: React.Dispatch<React.SetStateAction<string>>;
+  setGlobalNamespace: (namespace: string) => void;
   availableNamespaces: string[];
+  pinnedNamespaces: string[];
+  togglePinNamespace: (namespace: string) => void;
   isLoading: boolean;
   error: string | null;
 }
@@ -19,11 +21,19 @@ const NamespaceContext = createContext<NamespaceContextType | undefined>(
 export const NamespaceProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [globalNamespace, setGlobalNamespace] =
-    useState<string>(DEFAULT_NAMESPACE);
+  const [globalNamespace, setGlobalNamespace] = useState<string>(() => {
+    // Load global namespace from localStorage or use default
+    const saved = localStorage.getItem('globalNamespace');
+    return saved || DEFAULT_NAMESPACE;
+  });
   const [availableNamespaces, setAvailableNamespaces] = useState<string[]>([
     DEFAULT_NAMESPACE,
   ]);
+  const [pinnedNamespaces, setPinnedNamespaces] = useState<string[]>(() => {
+    // Load pinned namespaces from localStorage
+    const saved = localStorage.getItem('pinnedNamespaces');
+    return saved ? JSON.parse(saved) : ['default'];
+  });
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,11 +47,6 @@ export const NamespaceProvider: React.FC<{ children: React.ReactNode }> = ({
           (ns: any) => ns.metadata.name
         );
         setAvailableNamespaces(namespaceNames);
-
-        // If the currently selected namespace isn't in the list, reset to default
-        if (!namespaceNames.includes(globalNamespace)) {
-          setGlobalNamespace(DEFAULT_NAMESPACE);
-        }
       } catch (err) {
         console.error('Error fetching namespaces:', err);
         setError('Failed to fetch namespaces');
@@ -51,12 +56,32 @@ export const NamespaceProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     fetchNamespaces();
+  }, []);
+
+  // Persist globalNamespace to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('globalNamespace', globalNamespace);
   }, [globalNamespace]);
+
+  // Function to toggle pinned namespaces
+  const togglePinNamespace = (namespaceToToggle: string) => {
+    setPinnedNamespaces((prev) => {
+      const newPinned = prev.includes(namespaceToToggle)
+        ? prev.filter((ns) => ns !== namespaceToToggle)
+        : [...prev, namespaceToToggle];
+      
+      // Save to localStorage
+      localStorage.setItem('pinnedNamespaces', JSON.stringify(newPinned));
+      return newPinned;
+    });
+  };
 
   const value = {
     globalNamespace,
     setGlobalNamespace,
     availableNamespaces,
+    pinnedNamespaces,
+    togglePinNamespace,
     isLoading,
     error,
   };

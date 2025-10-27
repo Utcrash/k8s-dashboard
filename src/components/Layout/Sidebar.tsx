@@ -6,8 +6,8 @@ import {
   UnstyledButton,
   Text,
   Group,
-  MantineTheme,
   ScrollArea,
+  Divider,
 } from '@mantine/core';
 import {
   IconDashboard,
@@ -18,8 +18,9 @@ import {
   IconUsers,
   IconRocket,
   IconLock,
-  IconSettings,
 } from '@tabler/icons-react';
+import { useNamespace } from '../../context/NamespaceContext';
+import NamespaceList from './NamespaceList';
 
 interface MainLinkProps {
   icon: typeof IconDashboard;
@@ -28,26 +29,40 @@ interface MainLinkProps {
 }
 
 function MainLink({ icon: Icon, label, path }: MainLinkProps) {
+  const { globalNamespace } = useNamespace();
+  
+  // Build the full path with namespace
+  const fullPath = path === '/namespaces'
+    ? path 
+    : `/${globalNamespace}${path}`;
+
   return (
     <UnstyledButton
       component={NavLink}
-      to={path}
-      style={(theme: MantineTheme) => ({
+      to={fullPath}
+      style={({ isActive }: any) => ({
         display: 'block',
         width: '100%',
-        padding: theme.spacing.xs,
-        borderRadius: theme.radius.sm,
-        color: theme.colors.gray[7],
-        '&:hover': {
-          backgroundColor: theme.colors.gray[0],
-        },
-        '&.active': {
-          backgroundColor: theme.colors.blue[0],
-          color: theme.colors.blue[7],
-        },
+        padding: '8px 12px',
+        borderRadius: '4px',
+        textDecoration: 'none',
+        backgroundColor: isActive ? '#e3f2fd' : 'transparent',
+        color: isActive ? '#1976d2' : '#495057',
+        fontWeight: isActive ? 600 : 400,
+        transition: 'all 0.2s ease',
       })}
+      onMouseEnter={(e: any) => {
+        if (!e.currentTarget.classList.contains('active')) {
+          e.currentTarget.style.backgroundColor = '#f8f9fa';
+        }
+      }}
+      onMouseLeave={(e: any) => {
+        if (!e.currentTarget.classList.contains('active')) {
+          e.currentTarget.style.backgroundColor = 'transparent';
+        }
+      }}
     >
-      <Group>
+      <Group gap="sm">
         <Icon size={20} />
         <Text size="sm">{label}</Text>
       </Group>
@@ -56,7 +71,7 @@ function MainLink({ icon: Icon, label, path }: MainLinkProps) {
 }
 
 const mainLinks = [
-  { icon: IconDashboard, label: 'Dashboard', path: '/' },
+  { icon: IconDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: IconBox, label: 'Pods', path: '/pods' },
   { icon: IconServer, label: 'Services', path: '/services' },
   { icon: IconFolders, label: 'Namespaces', path: '/namespaces' },
@@ -66,43 +81,42 @@ const mainLinks = [
   { icon: IconLock, label: 'Secrets', path: '/secrets' },
 ];
 
-const settingsLinks = [{ icon: IconSettings, label: 'Token', path: '/token' }];
-
 export default function Sidebar() {
   const mainItems = mainLinks.map((link) => (
     <MainLink {...link} key={link.label} />
   ));
 
-  const settingsItems = settingsLinks.map((link) => (
-    <MainLink {...link} key={link.label} />
-  ));
-
   return (
     <Box
-      style={(theme: MantineTheme) => ({
+      style={{
         height: '100vh',
-        backgroundColor: theme.white,
-        borderRight: `1px solid ${theme.colors.gray[2]}`,
-        width: 260,
         display: 'flex',
         flexDirection: 'column',
-      })}
+      }}
     >
       <ScrollArea style={{ flex: 1 }}>
-        <Stack p="md" gap="xl">
-          <Stack gap="xs">
-            <Text size="xs" fw={500} c="dimmed">
-              MAIN
-            </Text>
-            {mainItems}
-          </Stack>
+        <Stack gap="md" pb="md">
+          {/* Namespace Selector Section */}
+          <Box>
+            <Box px="md" pt="md" pb="xs">
+              <Text size="xs" fw={500} c="dimmed">
+                NAMESPACE
+              </Text>
+            </Box>
+            <NamespaceList />
+          </Box>
 
-          <Stack gap="xs">
-            <Text size="xs" fw={500} c="dimmed">
-              SETTINGS
-            </Text>
-            {settingsItems}
-          </Stack>
+          <Divider />
+
+          {/* Main Navigation */}
+          <Box px="md">
+            <Stack gap="xs">
+              <Text size="xs" fw={500} c="dimmed">
+                NAVIGATION
+              </Text>
+              {mainItems}
+            </Stack>
+          </Box>
         </Stack>
       </ScrollArea>
     </Box>

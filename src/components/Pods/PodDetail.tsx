@@ -16,6 +16,7 @@ import {
 import { IconRefresh } from '@tabler/icons-react';
 import LogViewer from '../Logs/LogViewer';
 import { getPodLogs, streamPodLogs } from '../../services/k8sService';
+import { useNamespace } from '../../context/NamespaceContext';
 
 interface PodDetailProps {
   pod: any;
@@ -24,6 +25,7 @@ interface PodDetailProps {
 
 const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace }) => {
   const navigate = useNavigate();
+  const { globalNamespace } = useNamespace();
   const { tab = 'details' } = useParams<{ tab?: string }>();
   const [activeTab, setActiveTab] = useState(tab);
   const [logs, setLogs] = useState<string[]>([]);
@@ -309,7 +311,7 @@ const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace }) => {
     // Update the URL when changing tabs
     if (value) {
       setActiveTab(value);
-      navigate(`/pods/${namespace}/${pod.metadata.name}/${value}`);
+      navigate(`/${globalNamespace}/pods/${namespace}/${pod.metadata.name}/${value}`);
     }
   };
 
