@@ -13,7 +13,7 @@ import {
 import { IconArrowLeft } from '@tabler/icons-react';
 import PodDetail from '../components/Pods/PodDetail';
 import { getPod } from '../services/k8sService';
-import { useNamespace } from '../context/NamespaceContext';
+import { useGlobalNamespace } from '../hooks/useGlobalNamespace';
 
 // Get the default namespace from environment variables
 const DEFAULT_NAMESPACE = process.env.REACT_APP_K8S_NAMESPACE || 'default';
@@ -26,7 +26,7 @@ const PodDetailPage: React.FC = () => {
     tab = 'details',
   } = useParams<{ namespace: string; podNamespace: string; name: string; tab?: string }>();
   const navigate = useNavigate();
-  const { globalNamespace } = useNamespace();
+  const { globalNamespace } = useGlobalNamespace();
   const [pod, setPod] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

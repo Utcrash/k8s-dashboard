@@ -29,7 +29,7 @@ import {
   IconCheck,
   IconAlertTriangle,
 } from '@tabler/icons-react';
-import { useNamespace } from '../context/NamespaceContext';
+import { useGlobalNamespace } from '../hooks/useGlobalNamespace';
 import {
   getNamespaces,
   getPods,
@@ -53,7 +53,7 @@ interface ResourceCounts {
 
 
 const DashboardPage: React.FC = () => {
-  const { globalNamespace } = useNamespace();
+  const { globalNamespace } = useGlobalNamespace();
   const [namespaces, setNamespaces] = useState<string[]>([DEFAULT_NAMESPACE]);
   const [resourceCounts, setResourceCounts] = useState<ResourceCounts>({
     pods: 0,

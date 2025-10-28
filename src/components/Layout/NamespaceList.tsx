@@ -52,9 +52,6 @@ const NamespaceList: React.FC = () => {
   }, [filteredNamespaces, pinnedNamespaces]);
 
   const handleNamespaceClick = (namespace: string) => {
-    console.log('Namespace clicked:', namespace);
-    console.log('Current globalNamespace:', globalNamespace);
-    console.log('Available namespaces count:', availableNamespaces.length);
     setGlobalNamespace(namespace);
   };
 

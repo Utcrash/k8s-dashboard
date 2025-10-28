@@ -38,10 +38,10 @@ import {
 } from '../services/k8sService';
 import YamlEditor from '../components/Common/YamlEditor';
 import ConfirmationModal from '../components/Common/ConfirmationModal';
-import { useNamespace } from '../context/NamespaceContext';
+import { useGlobalNamespace } from '../hooks/useGlobalNamespace';
 
 const SecretsPage: React.FC = () => {
-  const { globalNamespace } = useNamespace();
+  const { globalNamespace } = useGlobalNamespace();
 
   const [secrets, setSecrets] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');

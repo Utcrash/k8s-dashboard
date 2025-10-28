@@ -34,11 +34,10 @@ import {
 } from '../services/k8sService';
 import YamlEditor from '../components/Common/YamlEditor';
 import ConfirmationModal from '../components/Common/ConfirmationModal';
-import { useNamespace } from '../context/NamespaceContext';
+import { useGlobalNamespace } from '../hooks/useGlobalNamespace';
 
 const ConfigMapsPage: React.FC = () => {
-  const { globalNamespace } = useNamespace();
-  const [selectedNamespace, setSelectedNamespace] = useState(globalNamespace);
+  const { globalNamespace } = useGlobalNamespace();
   const [configMaps, setConfigMaps] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -53,21 +52,16 @@ const ConfigMapsPage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [configMapYaml, setConfigMapYaml] = useState<any>(null);
 
-  // Update the namespace when the global namespace changes
-  useEffect(() => {
-    setSelectedNamespace(globalNamespace);
-  }, [globalNamespace]);
-
-  // Fetch configMaps when selected namespace changes
+  // Fetch configMaps when namespace changes
   useEffect(() => {
     fetchConfigMaps();
-  }, [selectedNamespace]);
+  }, [globalNamespace]);
 
   const fetchConfigMaps = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await getConfigMaps(selectedNamespace);
+      const response = await getConfigMaps(globalNamespace);
       setConfigMaps(response.items || []);
     } catch (err) {
       console.error('Error fetching configMaps:', err);

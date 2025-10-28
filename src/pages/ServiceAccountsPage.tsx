@@ -35,11 +35,10 @@ import {
 } from '../services/k8sService';
 import YamlEditor from '../components/Common/YamlEditor';
 import ConfirmationModal from '../components/Common/ConfirmationModal';
-import { useNamespace } from '../context/NamespaceContext';
+import { useGlobalNamespace } from '../hooks/useGlobalNamespace';
 
 const ServiceAccountsPage: React.FC = () => {
-  const { globalNamespace } = useNamespace();
-  const [selectedNamespace, setSelectedNamespace] = useState(globalNamespace);
+  const { globalNamespace } = useGlobalNamespace();
   const [serviceAccounts, setServiceAccounts] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -55,21 +54,16 @@ const ServiceAccountsPage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [serviceAccountYaml, setServiceAccountYaml] = useState<any>(null);
 
-  // Update the namespace when the global namespace changes
-  useEffect(() => {
-    setSelectedNamespace(globalNamespace);
-  }, [globalNamespace]);
-
-  // Fetch serviceAccounts when selected namespace changes
+  // Fetch serviceAccounts when namespace changes
   useEffect(() => {
     fetchServiceAccounts();
-  }, [selectedNamespace]);
+  }, [globalNamespace]);
 
   const fetchServiceAccounts = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await getServiceAccounts(selectedNamespace);
+      const response = await getServiceAccounts(globalNamespace);
       setServiceAccounts(response.items || []);
     } catch (err) {
       console.error('Error fetching serviceAccounts:', err);

@@ -43,14 +43,13 @@ import {
 } from '../services/k8sService';
 import YamlEditor from '../components/Common/YamlEditor';
 import ConfirmationModal from '../components/Common/ConfirmationModal';
-import { useNamespace } from '../context/NamespaceContext';
+import { useGlobalNamespace } from '../hooks/useGlobalNamespace';
 import { notifications } from '@mantine/notifications';
 
 const DeploymentsPage: React.FC = () => {
-  const { globalNamespace } = useNamespace();
+  const { globalNamespace } = useGlobalNamespace();
 
   const [deployments, setDeployments] = useState<any[]>([]);
-  const [selectedNamespace, setSelectedNamespace] = useState(globalNamespace);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,21 +67,16 @@ const DeploymentsPage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [deploymentYaml, setDeploymentYaml] = useState<any>(null);
 
-  // Update the namespace when the global namespace changes
-  useEffect(() => {
-    setSelectedNamespace(globalNamespace);
-  }, [globalNamespace]);
-
-  // Fetch deployments when selected namespace changes
+  // Fetch deployments when namespace changes
   useEffect(() => {
     fetchDeployments();
-  }, [selectedNamespace]);
+  }, [globalNamespace]);
 
   const fetchDeployments = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await getDeployments(selectedNamespace);
+      const response = await getDeployments(globalNamespace);
       setDeployments(response.items || []);
     } catch (err) {
       console.error('Error fetching deployments:', err);
