@@ -16,19 +16,17 @@ export const useGlobalNamespace = () => {
 
   // Function to change namespace by navigating to a new URL
   const setGlobalNamespace = (newNamespace: string) => {
-    // Get the current path segments
-    const pathSegments = location.pathname.split('/').filter(Boolean);
+    // Get current resource from the URL (deployments, pods, services, etc.)
+    const currentResource = location.pathname.split('/').pop();
     
-    // Replace the namespace segment (first segment after base)
-    if (pathSegments.length > 1) {
-      // We have a resource path like /namespace/deployments
-      pathSegments[0] = newNamespace;
-      navigate(`/${pathSegments.join('/')}`);
-    } else if (pathSegments.length === 1) {
-      // We have just a namespace, go to deployments
-      navigate(`/${newNamespace}/deployments`);
+    // List of valid resources
+    const validResources = ['deployments', 'pods', 'services', 'configmaps', 'serviceaccounts', 'secrets'];
+    
+    // If we're currently on a valid resource page, maintain that resource
+    if (validResources.includes(currentResource || '')) {
+      navigate(`/${newNamespace}/${currentResource}`);
     } else {
-      // If no path, go to deployments (default resource)
+      // Default to deployments if not on a valid resource page
       navigate(`/${newNamespace}/deployments`);
     }
   };
