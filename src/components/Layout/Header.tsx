@@ -1,19 +1,9 @@
 import React from 'react';
-import { Group, Title, Box, Flex, ActionIcon, Tooltip } from '@mantine/core';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { IconArrowLeft } from '@tabler/icons-react';
-import GlobalNamespaceSelector from './GlobalNamespaceSelector';
+import { Group, Title, Box, Text, Badge } from '@mantine/core';
+import { useNamespace } from '../../context/NamespaceContext';
 
 const Header: React.FC = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  // Don't show back button on the home page
-  const showBackButton = location.pathname !== '/';
-
-  const handleGoBack = () => {
-    navigate(-1);
-  };
+  const { globalNamespace } = useNamespace();
 
   return (
     <Box
@@ -23,7 +13,8 @@ const Header: React.FC = () => {
       style={{
         display: 'flex',
         alignItems: 'center',
-        background: 'linear-gradient(to right, #1565c0, #3f51b5)',
+        backgroundColor: 'var(--mantine-color-dark-8)',
+        borderBottom: '1px solid var(--mantine-color-dark-6)',
         color: 'white',
         justifyContent: 'space-between',
         zIndex: 1100,
@@ -31,24 +22,25 @@ const Header: React.FC = () => {
       }}
     >
       <Group>
-        {showBackButton && (
-          <Tooltip label="Go back" position="bottom">
-            <ActionIcon
-              variant="subtle"
-              color="white"
-              onClick={handleGoBack}
-              size="lg"
-              radius="md"
-            >
-              <IconArrowLeft size="1.5rem" stroke={1.5} />
-            </ActionIcon>
-          </Tooltip>
-        )}
-        <Title order={4} c="white">
+        <Title order={3} c="white" fw={600}>
           Kubernetes Dashboard
         </Title>
+        <Badge 
+          variant="light" 
+          color="customBlue" 
+          size="lg"
+          style={{ 
+            backgroundColor: 'var(--mantine-color-customBlue-5)',
+            color: 'white',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            boxShadow: '0 4px 12px rgba(59, 90, 170, 0.3)',
+            border: '1px solid rgba(59, 90, 170, 0.5)',
+            animation: 'pulse 2s infinite',
+          }}
+        >
+          Namespace: {globalNamespace}
+        </Badge>
       </Group>
-      <GlobalNamespaceSelector />
     </Box>
   );
 };

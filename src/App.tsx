@@ -11,7 +11,6 @@ import { ModalsProvider } from '@mantine/modals';
 import { Notifications } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
 import Layout from './components/Layout/Layout';
-import DashboardPage from './pages/DashboardPage';
 import PodsPage from './pages/PodsPage';
 import PodDetailPage from './pages/PodDetailPage';
 import ServicesPage from './pages/ServicesPage';
@@ -24,33 +23,33 @@ import { NamespaceProvider } from './context/NamespaceContext';
 import ScaleDeploymentModal from './components/Deployments/ScaleDeploymentModal';
 import './App.css';
 
-// Create a theme
+// Create a dark theme with custom primary color
 const theme = createTheme({
-  primaryColor: 'blue',
+  primaryColor: 'customBlue',
   colors: {
-    blue: [
-      '#e3f2fd',
-      '#bbdefb',
-      '#90caf9',
-      '#64b5f6',
-      '#42a5f5',
-      '#3f51b5', // primary main
-      '#1e88e5',
-      '#1976d2',
-      '#1565c0',
-      '#0d47a1',
+    customBlue: [
+      '#e8eef7',
+      '#d1ddef',
+      '#a3b9d9',
+      '#7394c3',
+      '#4a73b0',
+      '#3b5aaa', // rgb(59, 90, 170) - primary main
+      '#2f4788',
+      '#233566',
+      '#172344',
+      '#0b1122',
     ],
-    pink: [
-      '#fce4ec',
-      '#f8bbd0',
-      '#f48fb1',
-      '#f06292',
-      '#ec407a',
-      '#f50057', // secondary main
-      '#d81b60',
-      '#c2185b',
-      '#ad1457',
-      '#880e4f',
+    dark: [
+      '#C1C2C5',
+      '#A6A7AB',
+      '#909296',
+      '#5c5f66',
+      '#373A40',
+      '#2C2E33',
+      '#25262b',
+      '#1A1B1E',
+      '#141517',
+      '#101113',
     ],
   },
   fontFamily:
@@ -70,18 +69,18 @@ function App() {
   return (
     <>
       <ColorSchemeScript />
-      <MantineProvider theme={theme} defaultColorScheme="light">
+      <MantineProvider theme={theme} defaultColorScheme="dark">
         <Notifications />
         <ModalsProvider modals={modals}>
           <NamespaceProvider>
             <Router basename={BASE_URL}>
               <Layout>
                 <Routes>
-                  {/* Redirect root to default namespace */}
-                  <Route path="/" element={<Navigate to="/default/dashboard" replace />} />
+                  {/* Redirect root to default namespace deployments */}
+                  <Route path="/" element={<Navigate to="/default/deployments" replace />} />
                   
-                  {/* Namespace-based routes */}
-                  <Route path="/:namespace/dashboard" element={<DashboardPage />} />
+                  {/* Namespace-based routes - reordered with deployments first */}
+                  <Route path="/:namespace/deployments" element={<DeploymentsPage />} />
                   <Route path="/:namespace/pods" element={<PodsPage />} />
                   <Route
                     path="/:namespace/pods/:podNamespace/:name"
@@ -97,14 +96,13 @@ function App() {
                     path="/:namespace/serviceaccounts"
                     element={<ServiceAccountsPage />}
                   />
-                  <Route path="/:namespace/deployments" element={<DeploymentsPage />} />
                   <Route path="/:namespace/secrets" element={<SecretsPage />} />
                   
                   {/* Non-namespace routes */}
                   <Route path="/namespaces" element={<NamespacesPage />} />
                   
-                  {/* Redirect any unmatched routes to default namespace dashboard */}
-                  <Route path="*" element={<Navigate to="/default/dashboard" replace />} />
+                  {/* Redirect any unmatched routes to default namespace deployments */}
+                  <Route path="*" element={<Navigate to="/default/deployments" replace />} />
                 </Routes>
               </Layout>
             </Router>

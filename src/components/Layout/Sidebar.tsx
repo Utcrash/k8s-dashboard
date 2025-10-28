@@ -7,78 +7,51 @@ import {
   Text,
   Group,
   ScrollArea,
-  Divider,
 } from '@mantine/core';
 import {
-  IconDashboard,
   IconBox,
   IconServer,
-  IconFolders,
   IconFiles,
   IconUsers,
   IconRocket,
   IconLock,
 } from '@tabler/icons-react';
 import { useNamespace } from '../../context/NamespaceContext';
-import NamespaceList from './NamespaceList';
 
 interface MainLinkProps {
-  icon: typeof IconDashboard;
+  icon: typeof IconBox;
   label: string;
   path: string;
+  cssClass: string;
 }
 
-function MainLink({ icon: Icon, label, path }: MainLinkProps) {
+function MainLink({ icon: Icon, label, path, cssClass }: MainLinkProps) {
   const { globalNamespace } = useNamespace();
   
   // Build the full path with namespace
-  const fullPath = path === '/namespaces'
-    ? path 
-    : `/${globalNamespace}${path}`;
+  const fullPath = `/${globalNamespace}${path}`;
 
   return (
-    <UnstyledButton
-      component={NavLink}
+    <NavLink
       to={fullPath}
-      style={({ isActive }: any) => ({
-        display: 'block',
-        width: '100%',
-        padding: '8px 12px',
-        borderRadius: '4px',
-        textDecoration: 'none',
-        backgroundColor: isActive ? '#e3f2fd' : 'transparent',
-        color: isActive ? '#1976d2' : '#495057',
-        fontWeight: isActive ? 600 : 400,
-        transition: 'all 0.2s ease',
-      })}
-      onMouseEnter={(e: any) => {
-        if (!e.currentTarget.classList.contains('active')) {
-          e.currentTarget.style.backgroundColor = '#f8f9fa';
-        }
-      }}
-      onMouseLeave={(e: any) => {
-        if (!e.currentTarget.classList.contains('active')) {
-          e.currentTarget.style.backgroundColor = 'transparent';
-        }
-      }}
+      className={({ isActive }) => `nav-link ${cssClass} ${isActive ? 'active' : ''}`}
+      style={{ textDecoration: 'none' }}
     >
-      <Group gap="sm">
-        <Icon size={20} />
+      <Group gap="xs">
+        <Icon size={18} />
         <Text size="sm">{label}</Text>
       </Group>
-    </UnstyledButton>
+    </NavLink>
   );
 }
 
 const mainLinks = [
-  { icon: IconDashboard, label: 'Dashboard', path: '/dashboard' },
-  { icon: IconBox, label: 'Pods', path: '/pods' },
-  { icon: IconServer, label: 'Services', path: '/services' },
-  { icon: IconFolders, label: 'Namespaces', path: '/namespaces' },
-  { icon: IconFiles, label: 'ConfigMaps', path: '/configmaps' },
-  { icon: IconUsers, label: 'ServiceAccounts', path: '/serviceaccounts' },
-  { icon: IconRocket, label: 'Deployments', path: '/deployments' },
-  { icon: IconLock, label: 'Secrets', path: '/secrets' },
+  { icon: IconRocket, label: 'Deployments', path: '/deployments', cssClass: 'nav-link-deployments' },
+  { icon: IconBox, label: 'Pods', path: '/pods', cssClass: 'nav-link-pods' },
+  { icon: IconServer, label: 'Services', path: '/services', cssClass: 'nav-link-services' },
+  { icon: IconFiles, label: 'ConfigMaps', path: '/configmaps', cssClass: 'nav-link-configmaps' },
+  { icon: IconUsers, label: 'ServiceAccounts', path: '/serviceaccounts', cssClass: 'nav-link-serviceaccounts' },
+  { icon: IconLock, label: 'Secrets', path: '/secrets', cssClass: 'nav-link-secrets' },
 ];
 
 export default function Sidebar() {
@@ -89,35 +62,19 @@ export default function Sidebar() {
   return (
     <Box
       style={{
-        height: '100vh',
+        height: '60px',
         display: 'flex',
-        flexDirection: 'column',
+        alignItems: 'center',
+        backgroundColor: 'var(--mantine-color-dark-7)',
+        borderTop: '1px solid var(--mantine-color-dark-6)',
+        marginLeft: '280px', // Account for namespace sidebar width
+        animation: 'fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
       }}
     >
-      <ScrollArea style={{ flex: 1 }}>
-        <Stack gap="md" pb="md">
-          {/* Namespace Selector Section */}
-          <Box>
-            <Box px="md" pt="md" pb="xs">
-              <Text size="xs" fw={500} c="dimmed">
-                NAMESPACE
-              </Text>
-            </Box>
-            <NamespaceList />
-          </Box>
-
-          <Divider />
-
-          {/* Main Navigation */}
-          <Box px="md">
-            <Stack gap="xs">
-              <Text size="xs" fw={500} c="dimmed">
-                NAVIGATION
-              </Text>
-              {mainItems}
-            </Stack>
-          </Box>
-        </Stack>
+      <ScrollArea style={{ flex: 1 }} type="never">
+        <Group gap="xs" px="md" style={{ height: '60px', alignItems: 'center' }}>
+          {mainItems}
+        </Group>
       </ScrollArea>
     </Box>
   );

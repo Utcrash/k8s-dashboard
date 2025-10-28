@@ -64,20 +64,29 @@ const NamespaceList: React.FC = () => {
         gap="xs"
         wrap="nowrap"
         style={{
-          padding: '8px 12px',
-          borderRadius: '4px',
+          padding: '10px 14px',
+          borderRadius: '8px',
           cursor: 'pointer',
-          backgroundColor: isActive ? '#f0f0f0' : 'transparent',
-          transition: 'background-color 0.2s',
+          backgroundColor: isActive ? 'var(--mantine-color-customBlue-5)' : 'transparent',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          border: `2px solid ${isActive ? 'var(--mantine-color-customBlue-5)' : 'transparent'}`,
+          transform: isActive ? 'translateX(4px)' : 'translateX(0)',
+          boxShadow: isActive ? '0 4px 12px rgba(59, 90, 170, 0.3)' : '0 2px 4px rgba(0,0,0,0.1)',
         }}
         onMouseEnter={(e) => {
           if (!isActive) {
-            e.currentTarget.style.backgroundColor = '#f8f8f8';
+            e.currentTarget.style.backgroundColor = 'var(--mantine-color-dark-6)';
+            e.currentTarget.style.borderColor = 'var(--mantine-color-customBlue-7)';
+            e.currentTarget.style.transform = 'translateX(2px)';
+            e.currentTarget.style.boxShadow = '0 4px 8px rgba(59, 90, 170, 0.2)';
           }
         }}
         onMouseLeave={(e) => {
           if (!isActive) {
             e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.borderColor = 'transparent';
+            e.currentTarget.style.transform = 'translateX(0)';
+            e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
           }
         }}
       >
@@ -88,7 +97,7 @@ const NamespaceList: React.FC = () => {
           <Text
             size="sm"
             fw={isActive ? 600 : 400}
-            c={isActive ? 'blue' : 'dark'}
+            c={isActive ? 'white' : 'dark.1'}
             style={{
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -120,22 +129,40 @@ const NamespaceList: React.FC = () => {
   };
 
   return (
-    <Box style={{ padding: '8px 0' }}>
+    <Box style={{ padding: '0' }}>
       {/* Search Input */}
-      <Box px="md" mb="xs">
+      <Box mb="xs">
         <TextInput
           placeholder="Search namespaces..."
           leftSection={<IconSearch size={16} />}
           size="xs"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.currentTarget.value)}
+          style={{
+            transition: 'all 0.3s ease',
+          }}
+          styles={{
+            input: {
+              backgroundColor: 'var(--mantine-color-dark-6)',
+              border: '1px solid var(--mantine-color-dark-5)',
+              color: 'var(--mantine-color-dark-0)',
+              transition: 'all 0.3s ease',
+              '&:focus': {
+                borderColor: 'var(--mantine-color-customBlue-5)',
+                boxShadow: '0 0 0 2px rgba(59, 90, 170, 0.2)',
+              },
+              '&:hover': {
+                borderColor: 'var(--mantine-color-customBlue-7)',
+              }
+            }
+          }}
         />
       </Box>
 
       {/* Pinned Namespaces */}
       {pinned.length > 0 && (
         <Box mb="xs">
-          <Box px="md" py={4}>
+          <Box py={4}>
             <Text size="xs" fw={600} c="dimmed" tt="uppercase">
               Pinned
             </Text>
@@ -155,7 +182,7 @@ const NamespaceList: React.FC = () => {
             onClick={() => setIsAllExpanded(!isAllExpanded)}
             style={{ width: '100%' }}
           >
-            <Group gap="xs" px="md" py={4}>
+            <Group gap="xs" py={4}>
               {isAllExpanded ? (
                 <IconChevronDown size={14} />
               ) : (
@@ -180,7 +207,7 @@ const NamespaceList: React.FC = () => {
 
       {/* No Results */}
       {filteredNamespaces.length === 0 && !isLoading && (
-        <Box px="md" py="md">
+        <Box py="md">
           <Text size="sm" c="dimmed" ta="center">
             No namespaces found
           </Text>
@@ -189,8 +216,34 @@ const NamespaceList: React.FC = () => {
 
       {/* Loading State */}
       {isLoading && (
-        <Box px="md" py="md">
-          <Text size="sm" c="dimmed" ta="center">
+        <Box py="md">
+          <Box 
+            className="loading-shimmer"
+            style={{
+              height: '40px',
+              borderRadius: '8px',
+              marginBottom: '8px',
+              backgroundColor: 'var(--mantine-color-dark-6)',
+            }}
+          />
+          <Box 
+            className="loading-shimmer"
+            style={{
+              height: '40px',
+              borderRadius: '8px',
+              marginBottom: '8px',
+              backgroundColor: 'var(--mantine-color-dark-6)',
+            }}
+          />
+          <Box 
+            className="loading-shimmer"
+            style={{
+              height: '40px',
+              borderRadius: '8px',
+              backgroundColor: 'var(--mantine-color-dark-6)',
+            }}
+          />
+          <Text size="xs" c="dimmed" ta="center" mt="md">
             Loading namespaces...
           </Text>
         </Box>
