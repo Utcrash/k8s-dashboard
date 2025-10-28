@@ -52,6 +52,9 @@ const NamespaceList: React.FC = () => {
   }, [filteredNamespaces, pinnedNamespaces]);
 
   const handleNamespaceClick = (namespace: string) => {
+    console.log('Namespace clicked:', namespace);
+    console.log('Current globalNamespace:', globalNamespace);
+    console.log('Available namespaces count:', availableNamespaces.length);
     setGlobalNamespace(namespace);
   };
 
@@ -189,25 +192,28 @@ const NamespaceList: React.FC = () => {
                 <IconChevronRight size={14} />
               )}
               <Text size="xs" fw={600} c="dimmed" tt="uppercase">
-                All Namespaces ({unpinned.length})
+                All Namespaces ({unpinned.length} of {availableNamespaces.length})
               </Text>
             </Group>
           </UnstyledButton>
           <Collapse in={isAllExpanded}>
-            <ScrollArea 
+            <Box 
               style={{ 
                 maxHeight: 'calc(100vh - 280px)',
-                minHeight: '100px'
-              }} 
-              type="scroll"
-              scrollbarSize={6}
+                minHeight: '100px',
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                scrollbarWidth: 'thin',
+                scrollbarColor: 'var(--mantine-color-dark-4) var(--mantine-color-dark-8)',
+              }}
+              className="namespace-scroll-container"
             >
               <Box pb="xs">
                 {unpinned.map((namespace) => (
                   <NamespaceItem key={namespace} namespace={namespace} />
                 ))}
               </Box>
-            </ScrollArea>
+            </Box>
           </Collapse>
         </Box>
       )}

@@ -1,9 +1,9 @@
 import React from 'react';
 import { Group, Title, Box, Text, Badge } from '@mantine/core';
-import { useNamespace } from '../../context/NamespaceContext';
+import { useGlobalNamespace } from '../../hooks/useGlobalNamespace';
 
 const Header: React.FC = () => {
-  const { globalNamespace } = useNamespace();
+  const { globalNamespace } = useGlobalNamespace();
 
   return (
     <Box
