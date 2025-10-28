@@ -20,12 +20,16 @@ export const useGlobalNamespace = () => {
     const pathSegments = location.pathname.split('/').filter(Boolean);
     
     // Replace the namespace segment (first segment after base)
-    if (pathSegments.length > 0) {
+    if (pathSegments.length > 1) {
+      // We have a resource path like /namespace/deployments
       pathSegments[0] = newNamespace;
       navigate(`/${pathSegments.join('/')}`);
+    } else if (pathSegments.length === 1) {
+      // We have just a namespace, go to deployments
+      navigate(`/${newNamespace}/deployments`);
     } else {
-      // If no path, go to dashboard
-      navigate(`/${newNamespace}/dashboard`);
+      // If no path, go to deployments (default resource)
+      navigate(`/${newNamespace}/deployments`);
     }
   };
 

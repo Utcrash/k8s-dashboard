@@ -194,8 +194,15 @@ const NamespaceList: React.FC = () => {
             </Group>
           </UnstyledButton>
           <Collapse in={isAllExpanded}>
-            <ScrollArea style={{ maxHeight: 'calc(100vh - 400px)', minHeight: '200px' }}>
-              <Box>
+            <ScrollArea 
+              style={{ 
+                maxHeight: 'calc(100vh - 280px)',
+                minHeight: '100px'
+              }} 
+              type="scroll"
+              scrollbarSize={6}
+            >
+              <Box pb="xs">
                 {unpinned.map((namespace) => (
                   <NamespaceItem key={namespace} namespace={namespace} />
                 ))}

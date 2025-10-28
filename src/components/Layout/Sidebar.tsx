@@ -16,7 +16,7 @@ import {
   IconRocket,
   IconLock,
 } from '@tabler/icons-react';
-import { useNamespace } from '../../context/NamespaceContext';
+import { useGlobalNamespace } from '../../hooks/useGlobalNamespace';
 
 interface MainLinkProps {
   icon: typeof IconBox;
@@ -26,7 +26,7 @@ interface MainLinkProps {
 }
 
 function MainLink({ icon: Icon, label, path, cssClass }: MainLinkProps) {
-  const { globalNamespace } = useNamespace();
+  const { globalNamespace } = useGlobalNamespace();
   
   // Build the full path with namespace
   const fullPath = `/${globalNamespace}${path}`;
