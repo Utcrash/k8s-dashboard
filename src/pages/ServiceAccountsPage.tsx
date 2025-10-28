@@ -74,9 +74,6 @@ const ServiceAccountsPage: React.FC = () => {
     }
   };
 
-  const handleNamespaceChange = (namespace: string) => {
-    setSelectedNamespace(namespace);
-  };
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
