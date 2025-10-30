@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container,
   Title,
@@ -32,6 +32,7 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { modals, openContextModal } from '@mantine/modals';
 import NamespaceSelector from '../components/Namespaces/NamespaceSelector';
+import { useClusterRefresh } from '../hooks/useClusterRefresh';
 import {
   getDeployments,
   getNamespaces,
@@ -67,12 +68,7 @@ const DeploymentsPage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [deploymentYaml, setDeploymentYaml] = useState<any>(null);
 
-  // Fetch deployments when namespace changes
-  useEffect(() => {
-    fetchDeployments();
-  }, [namespace]);
-
-  const fetchDeployments = async () => {
+  const fetchDeployments = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -85,7 +81,15 @@ const DeploymentsPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [namespace]);
+
+  // Fetch deployments when namespace changes
+  useEffect(() => {
+    fetchDeployments();
+  }, [fetchDeployments]);
+
+  // Refresh deployments when cluster changes
+  useClusterRefresh(fetchDeployments);
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);

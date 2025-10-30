@@ -90,7 +90,7 @@ const YamlEditor: React.FC<YamlEditorProps> = ({
           <Paper withBorder p={0} style={{ flexGrow: 1 }}>
             <Editor
               height="100%"
-              defaultLanguage="json"
+              language="json"
               value={yamlContent}
               onChange={handleEditorChange}
               options={{

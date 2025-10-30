@@ -79,7 +79,7 @@ const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace: podNamespace }) =
         namespace,
         selectedContainer,
         tailLines,
-        logTimeframe
+        false // logTimeframe should be boolean for follow parameter
       );
 
       if (Array.isArray(logsData)) {
@@ -117,9 +117,9 @@ const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace: podNamespace }) =
         // Add new log chunk to the logs array
         setLogs((prev) => [...prev, logChunk]);
       },
-      (error: string) => {
+      (error: Error) => {
         console.error('Streaming error:', error);
-        setLogs((prev) => [...prev, `Error: ${error}`]);
+        setLogs((prev) => [...prev, `Error: ${error.message}`]);
         setIsStreaming(false);
       }
     );

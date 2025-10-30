@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Grid, Paper, LoadingOverlay, Text } from '@mantine/core';
 import PodList from '../components/Pods/PodList';
 import { getPods, updatePod, restartPod } from '../services/k8sService';
 import { useCurrentNamespace } from '../hooks/useNamespace';
+import { useClusterRefresh } from '../hooks/useClusterRefresh';
 import { showNotification } from '@mantine/notifications';
 
 const PodsPage: React.FC = () => {
@@ -14,12 +15,7 @@ const PodsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch pods when namespace changes
-  useEffect(() => {
-    fetchPods();
-  }, [namespace]);
-
-  const fetchPods = async () => {
+  const fetchPods = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -32,7 +28,15 @@ const PodsPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [namespace]);
+
+  // Fetch pods when namespace changes
+  useEffect(() => {
+    fetchPods();
+  }, [fetchPods]);
+
+  // Refresh pods when cluster changes
+  useClusterRefresh(fetchPods);
 
   const handlePodSelect = (pod: any) => {
     // Navigate to the pod detail page using the new URL structure

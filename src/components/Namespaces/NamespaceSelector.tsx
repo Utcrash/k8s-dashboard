@@ -1,5 +1,5 @@
 import React from 'react';
-import { Select, Box, Badge, Group } from '@mantine/core';
+import { Box, Badge, Group } from '@mantine/core';
 
 interface NamespaceSelectorProps {
   namespaces: string[];
@@ -14,47 +14,39 @@ const NamespaceSelector: React.FC<NamespaceSelectorProps> = ({
 }) => {
   return (
     <Box mt={10}>
-      <Select
-        label="Namespace"
-        value={selectedNamespace}
-        onChange={(value) => value && onNamespaceChange(value)}
-        data={namespaces.map((namespace) => ({
-          value: namespace,
-          label: namespace,
-        }))}
-        searchable
-        nothingFoundMessage="No namespaces found"
-        rightSection={
+      <div>
+        <label style={{ 
+          display: 'block', 
+          marginBottom: '4px', 
+          fontSize: '14px', 
+          fontWeight: 500 
+        }}>
+          Namespace
+        </label>
+        <Group gap="xs">
+          <select
+            value={selectedNamespace}
+            onChange={(e) => onNamespaceChange(e.target.value)}
+            style={{
+              minWidth: 200,
+              padding: '8px 12px',
+              borderRadius: '6px',
+              border: '1px solid #ced4da',
+              fontSize: '14px',
+              outline: 'none',
+            }}
+          >
+            {namespaces.map((namespace) => (
+              <option key={namespace} value={namespace}>
+                {namespace}
+              </option>
+            ))}
+          </select>
           <Badge size="xs" color="blue" variant="light">
             {namespaces.length}
           </Badge>
-        }
-        miw={200}
-        size="sm"
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') {
-            const searchValue = (event.target as HTMLInputElement).value;
-            if (namespaces.includes(searchValue)) {
-              onNamespaceChange(searchValue);
-            }
-          }
-        }}
-        comboboxProps={{
-          position: 'bottom-start',
-          offset: 0,
-          middlewares: { flip: true, shift: true },
-          zIndex: 1050,
-        }}
-        styles={{
-          dropdown: {
-            position: 'absolute',
-            zIndex: 1050,
-            maxHeight: '300px',
-            overflowY: 'auto',
-          },
-        }}
-        maxDropdownHeight={300}
-      />
+        </Group>
+      </div>
     </Box>
   );
 };

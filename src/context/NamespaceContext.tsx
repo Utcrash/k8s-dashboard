@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { getNamespaces } from '../services/k8sService';
+import { clusterEvents } from '../utils/clusterEvents';
 
 // Get the default namespace from environment variables
 const DEFAULT_NAMESPACE = process.env.REACT_APP_K8S_NAMESPACE || 'default';
@@ -10,6 +11,7 @@ interface NamespaceContextType {
   availableNamespaces: string[];
   pinnedNamespaces: string[];
   togglePinNamespace: (namespace: string) => void;
+  reloadNamespaces: () => Promise<void>;
   isLoading: boolean;
   error: string | null;
 }
@@ -33,25 +35,39 @@ export const NamespaceProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchNamespaces = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await getNamespaces();
-        const namespaceNames = response.items.map(
-          (ns: any) => ns.metadata.name
-        );
-        setAvailableNamespaces(namespaceNames);
-      } catch (err) {
-        console.error('Error fetching namespaces:', err);
-        setError('Failed to fetch namespaces');
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const fetchNamespaces = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await getNamespaces();
+      const namespaceNames = response.items.map(
+        (ns: any) => ns.metadata.name
+      );
+      setAvailableNamespaces(namespaceNames);
+    } catch (err) {
+      console.error('Error fetching namespaces:', err);
+      setError('Failed to fetch namespaces');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  const reloadNamespaces = async () => {
+    await fetchNamespaces();
+  };
+
+  useEffect(() => {
     fetchNamespaces();
+  }, []);
+
+  // Listen for cluster changes and reload namespaces
+  useEffect(() => {
+    const unsubscribe = clusterEvents.subscribe((clusterId) => {
+      console.log(`🔄 Reloading namespaces for cluster: ${clusterId}`);
+      fetchNamespaces();
+    });
+
+    return unsubscribe;
   }, []);
 
   // Note: globalNamespace is now managed by URL routing, not localStorage
@@ -75,6 +91,7 @@ export const NamespaceProvider: React.FC<{ children: React.ReactNode }> = ({
     availableNamespaces,
     pinnedNamespaces,
     togglePinNamespace,
+    reloadNamespaces,
     isLoading,
     error,
   };

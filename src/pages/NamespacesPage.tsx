@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container,
   Title,
@@ -14,6 +14,7 @@ import {
 } from '@mantine/core';
 import { IconSearch, IconRefresh } from '@tabler/icons-react';
 import { getNamespaces } from '../services/k8sService';
+import { useClusterRefresh } from '../hooks/useClusterRefresh';
 
 const NamespacesPage: React.FC = () => {
   const [namespaces, setNamespaces] = useState<any[]>([]);
@@ -21,12 +22,7 @@ const NamespacesPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch namespaces on initial load
-  useEffect(() => {
-    fetchNamespaces();
-  }, []);
-
-  const fetchNamespaces = async () => {
+  const fetchNamespaces = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -39,7 +35,15 @@ const NamespacesPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  // Fetch namespaces on initial load
+  useEffect(() => {
+    fetchNamespaces();
+  }, [fetchNamespaces]);
+
+  // Refresh namespaces when cluster changes
+  useClusterRefresh(fetchNamespaces);
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);

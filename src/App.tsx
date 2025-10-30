@@ -20,6 +20,7 @@ import ServiceAccountsPage from './pages/ServiceAccountsPage';
 import DeploymentsPage from './pages/DeploymentsPage';
 import SecretsPage from './pages/SecretsPage';
 import { NamespaceProvider } from './context/NamespaceContext';
+import { ClusterProvider } from './context/ClusterContext';
 import { useLocation } from 'react-router-dom';
 import ScaleDeploymentModal from './components/Deployments/ScaleDeploymentModal';
 import './App.css';
@@ -73,8 +74,9 @@ function App() {
       <MantineProvider theme={theme} defaultColorScheme="dark">
         <Notifications />
         <ModalsProvider modals={modals}>
-          <NamespaceProvider>
-            <Router basename={BASE_URL}>
+          <ClusterProvider>
+            <NamespaceProvider>
+              <Router basename={BASE_URL}>
               <Layout>
                 <Routes>
                   {/* Redirect root to default namespace deployments */}
@@ -106,8 +108,9 @@ function App() {
                   <Route path="*" element={<Navigate to="/appveen/deployments" replace />} />
                 </Routes>
               </Layout>
-            </Router>
-          </NamespaceProvider>
+              </Router>
+            </NamespaceProvider>
+          </ClusterProvider>
         </ModalsProvider>
       </MantineProvider>
     </>

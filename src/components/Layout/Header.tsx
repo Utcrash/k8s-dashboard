@@ -1,6 +1,8 @@
 import React from 'react';
 import { Group, Title, Box, Text, Badge } from '@mantine/core';
 import { useCurrentNamespace } from '../../hooks/useNamespace';
+import ClusterSwitcher from '../Clusters/ClusterSwitcher';
+import ErrorBoundary from '../Common/ErrorBoundary';
 
 const Header: React.FC = () => {
   const { namespace } = useCurrentNamespace();
@@ -22,25 +24,31 @@ const Header: React.FC = () => {
         position: 'relative',
       }}
     >
-      <Group>
-        <Title order={3} c="white" fw={600}>
-          Kubernetes Dashboard
-        </Title>
-        <Badge 
-          variant="light" 
-          color="customBlue" 
-          size="lg"
-          style={{ 
-            backgroundColor: 'var(--mantine-color-customBlue-5)',
-            color: 'white',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            boxShadow: '0 4px 12px rgba(59, 90, 170, 0.3)',
-            border: '1px solid rgba(59, 90, 170, 0.5)',
-            animation: 'pulse 2s infinite',
-          }}
-        >
-          Namespace: {namespace}
-        </Badge>
+      <Group justify="space-between" style={{ width: '100%' }}>
+        <Group>
+          <Title order={3} c="white" fw={600}>
+            Kubernetes Dashboard
+          </Title>
+          <Badge 
+            variant="light" 
+            color="customBlue" 
+            size="lg"
+            style={{ 
+              backgroundColor: 'var(--mantine-color-customBlue-5)',
+              color: 'white',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              boxShadow: '0 4px 12px rgba(59, 90, 170, 0.3)',
+              border: '1px solid rgba(59, 90, 170, 0.5)',
+              animation: 'pulse 2s infinite',
+            }}
+          >
+            Namespace: {namespace}
+          </Badge>
+        </Group>
+        
+        <ErrorBoundary>
+          <ClusterSwitcher />
+        </ErrorBoundary>
       </Group>
     </Box>
   );

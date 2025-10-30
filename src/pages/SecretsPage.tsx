@@ -194,7 +194,9 @@ const SecretsPage: React.FC = () => {
   const handleCreateSecret = async (newSecretYaml: any) => {
     try {
       setActionLoading(true);
-      await createSecret(globalNamespace, newSecretYaml);
+      // Extract name from YAML or generate one
+      const secretName = newSecretYaml?.metadata?.name || `secret-${Date.now()}`;
+      await createSecret(secretName, globalNamespace, newSecretYaml);
       fetchSecrets();
       closeYamlEditor();
     } catch (error) {

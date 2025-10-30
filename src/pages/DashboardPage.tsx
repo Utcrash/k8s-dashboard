@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container,
   Paper,
@@ -30,6 +30,7 @@ import {
   IconAlertTriangle,
 } from '@tabler/icons-react';
 import { useGlobalNamespace } from '../hooks/useGlobalNamespace';
+import { useClusterRefresh } from '../hooks/useClusterRefresh';
 import {
   getNamespaces,
   getPods,
@@ -69,17 +70,7 @@ const DashboardPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch namespaces on initial load
-  useEffect(() => {
-    fetchNamespaces();
-  }, []);
-
-  // Fetch resources when namespace changes
-  useEffect(() => {
-    fetchResources();
-  }, [globalNamespace]);
-
-  const fetchNamespaces = async () => {
+  const fetchNamespaces = useCallback(async () => {
     try {
       const response = await getNamespaces();
       const namespaceNames = response.items.map((ns: any) => ns.metadata.name);
@@ -88,9 +79,9 @@ const DashboardPage: React.FC = () => {
       console.error('Error fetching namespaces:', err);
       setError('Failed to fetch namespaces');
     }
-  };
+  }, []);
 
-  const fetchResources = async () => {
+  const fetchResources = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -161,7 +152,23 @@ const DashboardPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [globalNamespace]);
+
+  // Fetch namespaces on initial load
+  useEffect(() => {
+    fetchNamespaces();
+  }, [fetchNamespaces]);
+
+  // Fetch resources when namespace changes
+  useEffect(() => {
+    fetchResources();
+  }, [fetchResources]);
+
+  // Refresh dashboard when cluster changes
+  useClusterRefresh(() => {
+    fetchNamespaces();
+    fetchResources();
+  });
 
   const isPodReady = (pod: any): boolean => {
     if (!pod.status.containerStatuses) return false;

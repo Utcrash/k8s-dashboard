@@ -1,5 +1,5 @@
 import React from 'react';
-import { Select, Box, Text, Group } from '@mantine/core';
+import { Box, Text, Group } from '@mantine/core';
 import { useNamespace } from '../../context/NamespaceContext';
 
 const GlobalNamespaceSelector: React.FC = () => {
@@ -15,56 +15,30 @@ const GlobalNamespaceSelector: React.FC = () => {
       <Text fw={500} size="sm" c="white">
         Namespace:
       </Text>
-      <Select
-        placeholder="Select namespace"
+      <select
         value={globalNamespace}
-        onChange={(value) => value && setGlobalNamespace(value)}
-        data={availableNamespaces.map((namespace) => ({
-          value: namespace,
-          label: namespace,
-        }))}
-        size="xs"
-        w={180}
-        searchable
-        nothingFoundMessage="No namespaces found"
-        onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => {
-          if (event.key === 'Enter') {
-            const searchValue = (event.target as HTMLInputElement).value;
-            if (availableNamespaces.includes(searchValue)) {
-              setGlobalNamespace(searchValue);
-            }
-          }
-        }}
-        comboboxProps={{
-          position: 'bottom-start',
-          offset: 5,
-          middlewares: { flip: true, shift: true },
-          zIndex: 1050,
-        }}
-        styles={(theme) => ({
-          input: {
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-            color: 'white',
-            border: 'none',
-            '&:focus': {
-              borderColor: theme.colors.blue[2],
-            },
-          },
-          dropdown: {
-            position: 'absolute',
-            zIndex: 1050,
-            maxHeight: '300px',
-            overflowY: 'auto',
-          },
-          option: {
-            '&[data-selected]': {
-              backgroundColor: theme.colors.blue[5],
-            },
-          },
-        })}
+        onChange={(e) => setGlobalNamespace(e.target.value)}
         disabled={isLoading}
-        maxDropdownHeight={300}
-      />
+        style={{
+          width: 180,
+          padding: '4px 8px',
+          borderRadius: '4px',
+          border: 'none',
+          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+          color: 'white',
+          fontSize: '12px',
+          outline: 'none',
+        }}
+      >
+        <option value="" disabled>
+          Select namespace
+        </option>
+        {availableNamespaces.map((namespace) => (
+          <option key={namespace} value={namespace}>
+            {namespace}
+          </option>
+        ))}
+      </select>
     </Group>
   );
 };
