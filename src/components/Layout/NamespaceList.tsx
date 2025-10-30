@@ -18,7 +18,7 @@ import {
   IconChevronRight,
 } from '@tabler/icons-react';
 import { useNamespace } from '../../context/NamespaceContext';
-import { useGlobalNamespace } from '../../hooks/useGlobalNamespace';
+import { useCurrentNamespace } from '../../hooks/useNamespace';
 
 const NamespaceList: React.FC = () => {
   const {
@@ -28,7 +28,7 @@ const NamespaceList: React.FC = () => {
     isLoading,
   } = useNamespace();
   
-  const { globalNamespace, setGlobalNamespace } = useGlobalNamespace();
+  const { namespace: currentNamespace, setNamespace } = useCurrentNamespace();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [isAllExpanded, setIsAllExpanded] = useState(true);
@@ -51,13 +51,14 @@ const NamespaceList: React.FC = () => {
     return { pinned, unpinned };
   }, [filteredNamespaces, pinnedNamespaces]);
 
-  const handleNamespaceClick = (namespace: string) => {
-    setGlobalNamespace(namespace);
+  const handleNamespaceClick = (clickedNamespace: string) => {
+    setNamespace(clickedNamespace);
   };
 
-  const NamespaceItem = ({ namespace }: { namespace: string }) => {
-    const isActive = namespace === globalNamespace;
-    const isPinned = pinnedNamespaces.includes(namespace);
+  const NamespaceItem = ({ namespace: itemNamespace }: { namespace: string }) => {
+    const isActive = itemNamespace === currentNamespace;
+    const isPinned = pinnedNamespaces.includes(itemNamespace);
+    
 
     return (
       <Group
@@ -91,7 +92,7 @@ const NamespaceList: React.FC = () => {
         }}
       >
         <UnstyledButton
-          onClick={() => handleNamespaceClick(namespace)}
+          onClick={() => handleNamespaceClick(itemNamespace)}
           style={{ flex: 1, textAlign: 'left' }}
         >
           <Text
@@ -104,7 +105,7 @@ const NamespaceList: React.FC = () => {
               whiteSpace: 'nowrap',
             }}
           >
-            {namespace}
+            {itemNamespace}
           </Text>
         </UnstyledButton>
         <Tooltip label={isPinned ? 'Unpin' : 'Pin'} position="right">
@@ -114,7 +115,7 @@ const NamespaceList: React.FC = () => {
             size="sm"
             onClick={(e) => {
               e.stopPropagation();
-              togglePinNamespace(namespace);
+              togglePinNamespace(itemNamespace);
             }}
           >
             {isPinned ? (

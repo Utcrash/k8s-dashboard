@@ -16,16 +16,16 @@ import {
 import { IconRefresh } from '@tabler/icons-react';
 import LogViewer from '../Logs/LogViewer';
 import { getPodLogs, streamPodLogs } from '../../services/k8sService';
-import { useNamespace } from '../../context/NamespaceContext';
+import { useCurrentNamespace } from '../../hooks/useNamespace';
 
 interface PodDetailProps {
   pod: any;
   namespace: string;
 }
 
-const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace }) => {
+const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace: podNamespace }) => {
   const navigate = useNavigate();
-  const { globalNamespace } = useNamespace();
+  const { namespace } = useCurrentNamespace();
   const { tab = 'details' } = useParams<{ tab?: string }>();
   const [activeTab, setActiveTab] = useState(tab);
   const [logs, setLogs] = useState<string[]>([]);
@@ -74,7 +74,7 @@ const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace }) => {
 
     setIsLoading(true);
     try {
-      const logsData = await getPodLogs(
+      const logsData: any = await getPodLogs(
         pod.metadata.name,
         namespace,
         selectedContainer,
@@ -82,9 +82,11 @@ const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace }) => {
         logTimeframe
       );
 
-      if (typeof logsData === 'string') {
-        // If logs data is a string (not an array), it could be an error message or a single line
-        const logLines = logsData.split('\n').filter(Boolean);
+      if (Array.isArray(logsData)) {
+        setLogs(logsData);
+      } else if (typeof logsData === 'string') {
+        // If logs data is a string, split by lines
+        const logLines = (logsData as string).split('\n').filter(Boolean);
         setLogs(logLines.length > 0 ? logLines : [logsData]);
       } else {
         setLogs(['Unexpected log format received']);
@@ -110,16 +112,16 @@ const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace }) => {
     const cancelStream = streamPodLogs(
       pod.metadata.name,
       namespace,
+      selectedContainer,
       (logChunk: string) => {
         // Add new log chunk to the logs array
         setLogs((prev) => [...prev, logChunk]);
       },
-      (error: Error) => {
+      (error: string) => {
         console.error('Streaming error:', error);
-        setLogs((prev) => [...prev, `Error: ${error.message}`]);
+        setLogs((prev) => [...prev, `Error: ${error}`]);
         setIsStreaming(false);
-      },
-      selectedContainer
+      }
     );
 
     // Store cancel function
@@ -311,7 +313,7 @@ const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace }) => {
     // Update the URL when changing tabs
     if (value) {
       setActiveTab(value);
-      navigate(`/${globalNamespace}/pods/${namespace}/${pod.metadata.name}/${value}`);
+      navigate(`/${namespace}/pods/${namespace}/${pod.metadata.name}/${value}`);
     }
   };
 

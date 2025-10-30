@@ -20,6 +20,7 @@ import ServiceAccountsPage from './pages/ServiceAccountsPage';
 import DeploymentsPage from './pages/DeploymentsPage';
 import SecretsPage from './pages/SecretsPage';
 import { NamespaceProvider } from './context/NamespaceContext';
+import { useLocation } from 'react-router-dom';
 import ScaleDeploymentModal from './components/Deployments/ScaleDeploymentModal';
 import './App.css';
 
@@ -77,7 +78,7 @@ function App() {
               <Layout>
                 <Routes>
                   {/* Redirect root to default namespace deployments */}
-                  <Route path="/" element={<Navigate to="/default/deployments" replace />} />
+                  <Route path="/" element={<Navigate to="/appveen/deployments" replace />} />
                   
                   {/* Namespace-based routes - reordered with deployments first */}
                   <Route path="/:namespace/deployments" element={<DeploymentsPage />} />
@@ -102,7 +103,7 @@ function App() {
                   <Route path="/namespaces" element={<NamespacesPage />} />
                   
                   {/* Redirect any unmatched routes to default namespace deployments */}
-                  <Route path="*" element={<Navigate to="/default/deployments" replace />} />
+                  <Route path="*" element={<Navigate to="/appveen/deployments" replace />} />
                 </Routes>
               </Layout>
             </Router>

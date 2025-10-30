@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { Container, Grid, Paper, LoadingOverlay, Text } from '@mantine/core';
 import PodList from '../components/Pods/PodList';
 import { getPods, updatePod, restartPod } from '../services/k8sService';
-import { useGlobalNamespace } from '../hooks/useGlobalNamespace';
+import { useCurrentNamespace } from '../hooks/useNamespace';
 import { showNotification } from '@mantine/notifications';
 
 const PodsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { globalNamespace } = useGlobalNamespace();
+  const { namespace } = useCurrentNamespace();
 
   const [pods, setPods] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -17,13 +17,13 @@ const PodsPage: React.FC = () => {
   // Fetch pods when namespace changes
   useEffect(() => {
     fetchPods();
-  }, [globalNamespace]);
+  }, [namespace]);
 
   const fetchPods = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await getPods(globalNamespace);
+      const response = await getPods(namespace);
       setPods(response.items || []);
     } catch (err) {
       console.error('Error fetching pods:', err);
@@ -36,16 +36,16 @@ const PodsPage: React.FC = () => {
 
   const handlePodSelect = (pod: any) => {
     // Navigate to the pod detail page using the new URL structure
-    navigate(`/${globalNamespace}/pods/${pod.metadata.namespace}/${pod.metadata.name}`);
+    navigate(`/${namespace}/pods/${pod.metadata.namespace}/${pod.metadata.name}`);
   };
 
   const updateAndRestartPod = async (podName: string, podYaml: any) => {
     try {
       // First update the pod with new YAML
-      await updatePod(podName, globalNamespace, podYaml);
+      await updatePod(podName, namespace, podYaml);
 
       // Then restart it
-      await restartPod(podName, globalNamespace);
+      await restartPod(podName, namespace);
 
       // Refresh the pod list
       await fetchPods();

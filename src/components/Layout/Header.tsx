@@ -1,9 +1,10 @@
 import React from 'react';
 import { Group, Title, Box, Text, Badge } from '@mantine/core';
-import { useGlobalNamespace } from '../../hooks/useGlobalNamespace';
+import { useCurrentNamespace } from '../../hooks/useNamespace';
 
 const Header: React.FC = () => {
-  const { globalNamespace } = useGlobalNamespace();
+  const { namespace } = useCurrentNamespace();
+  
 
   return (
     <Box
@@ -38,7 +39,7 @@ const Header: React.FC = () => {
             animation: 'pulse 2s infinite',
           }}
         >
-          Namespace: {globalNamespace}
+          Namespace: {namespace}
         </Badge>
       </Group>
     </Box>

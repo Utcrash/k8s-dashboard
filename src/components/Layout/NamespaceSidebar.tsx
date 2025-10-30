@@ -5,8 +5,11 @@ import {
   ScrollArea,
 } from '@mantine/core';
 import NamespaceList from './NamespaceList';
+import { useCurrentNamespace } from '../../hooks/useNamespace';
 
 export default function NamespaceSidebar() {
+  const { namespace } = useCurrentNamespace();
+  
   return (
     <Box
       style={{

@@ -43,11 +43,11 @@ import {
 } from '../services/k8sService';
 import YamlEditor from '../components/Common/YamlEditor';
 import ConfirmationModal from '../components/Common/ConfirmationModal';
-import { useGlobalNamespace } from '../hooks/useGlobalNamespace';
+import { useCurrentNamespace } from '../hooks/useNamespace';
 import { notifications } from '@mantine/notifications';
 
 const DeploymentsPage: React.FC = () => {
-  const { globalNamespace } = useGlobalNamespace();
+  const { namespace } = useCurrentNamespace();
 
   const [deployments, setDeployments] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -70,13 +70,13 @@ const DeploymentsPage: React.FC = () => {
   // Fetch deployments when namespace changes
   useEffect(() => {
     fetchDeployments();
-  }, [globalNamespace]);
+  }, [namespace]);
 
   const fetchDeployments = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await getDeployments(globalNamespace);
+      const response = await getDeployments(namespace);
       setDeployments(response.items || []);
     } catch (err) {
       console.error('Error fetching deployments:', err);
