@@ -21,21 +21,22 @@ class DatabaseService {
     }
 
     try {
-      const mongoUrl = process.env.MONGODB_URL || 'mongodb://localhost:27017';
-      const dbName = process.env.MONGODB_DB_NAME || 'dnio-k8s-dashboard';
+      const connectionString = process.env.MONGODB_CONNECTION_STRING || 'mongodb://localhost:27017/dnio-k8s-dashboard';
 
-      console.log(`🔌 Connecting to MongoDB: ${mongoUrl}/${dbName}`);
+      // Mask credentials in logs for security
+      const maskedConnectionString = connectionString.replace(/\/\/([^:]+):([^@]+)@/, '//***:***@');
+      console.log(`🔌 Connecting to MongoDB: ${maskedConnectionString}`);
       
-      this.client = new MongoClient(mongoUrl, {
+      this.client = new MongoClient(connectionString, {
         useUnifiedTopology: true,
         serverSelectionTimeoutMS: 5000, // 5 second timeout
       });
 
       await this.client.connect();
-      this.db = this.client.db(dbName);
+      this.db = this.client.db(); // Use database from connection string
       this.isConnected = true;
 
-      console.log(`✅ Connected to MongoDB: ${dbName}`);
+      console.log(`✅ Connected to MongoDB: ${this.db.databaseName}`);
       
       // Create indexes for better performance
       await this.createIndexes();

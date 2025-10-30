@@ -51,7 +51,9 @@ async function startServer() {
     app.listen(PORT, () => {
       console.log(`🚀 K8s Dashboard Backend running on port ${PORT}`);
       console.log(`📡 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
-      console.log(`🗄️ Database: ${process.env.MONGODB_DB_NAME || 'dnio-k8s-dashboard'}`);
+      const connectionString = process.env.MONGODB_CONNECTION_STRING || 'mongodb://localhost:27017/dnio-k8s-dashboard';
+      const maskedConnectionString = connectionString.replace(/\/\/([^:]+):([^@]+)@/, '//***:***@');
+      console.log(`🗄️ Database: ${maskedConnectionString}`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error.message);

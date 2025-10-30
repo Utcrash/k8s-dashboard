@@ -49,26 +49,28 @@ cp .env.example .env
 
 Edit `.env` with your configuration:
 
-```env
+```bash
 # Server Configuration
 PORT=3001
 NODE_ENV=development
 FRONTEND_URL=http://localhost:3000
 
 # Database Configuration
-MONGODB_URL=mongodb://localhost:27017
-MONGODB_DB_NAME=dnio-k8s-dashboard
+MONGODB_CONNECTION_STRING=mongodb://localhost:27017/dnio-k8s-dashboard
 
-# Security
-JWT_SECRET=your-jwt-secret-here
+# For MongoDB with authentication:
+# MONGODB_CONNECTION_STRING=mongodb://username:password@localhost:27017/dnio-k8s-dashboard
 
-# SSH Configuration
-SSH_TIMEOUT=30000
-MAX_CONNECTIONS=10
-
-# Logging
-LOG_LEVEL=info
+# For MongoDB Atlas:
+# MONGODB_CONNECTION_STRING=mongodb+srv://username:password@cluster.mongodb.net/dnio-k8s-dashboard
 ```
+
+**MongoDB Connection String Examples:**
+
+- **Local MongoDB**: `mongodb://localhost:27017/dnio-k8s-dashboard`
+- **With Authentication**: `mongodb://username:password@localhost:27017/dnio-k8s-dashboard`
+- **MongoDB Atlas**: `mongodb+srv://username:password@cluster.mongodb.net/dnio-k8s-dashboard`
+- **Replica Set**: `mongodb://host1:27017,host2:27017,host3:27017/dnio-k8s-dashboard?replicaSet=myReplicaSet`
 
 ### 4. Start the Server
 
