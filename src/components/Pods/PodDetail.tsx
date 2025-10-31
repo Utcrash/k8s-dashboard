@@ -69,6 +69,61 @@ const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace: podNamespace }) =
     };
   }, [activeTab, selectedContainer]);
 
+  const processLogData = (logsData: any): string[] => {
+    try {
+      // Handle array of logs
+      if (Array.isArray(logsData)) {
+        return logsData.map(log => typeof log === 'string' ? log : JSON.stringify(log, null, 2));
+      }
+      
+      // Handle string logs
+      if (typeof logsData === 'string') {
+        // Try to parse as JSON first (in case it's a JSON string)
+        try {
+          const parsed = JSON.parse(logsData);
+          if (typeof parsed === 'object') {
+            return [JSON.stringify(parsed, null, 2)];
+          }
+        } catch {
+          // Not JSON, treat as regular string
+        }
+        
+        // Split by lines and filter empty lines
+        const logLines = logsData.split('\n').filter(line => line.trim() !== '');
+        return logLines.length > 0 ? logLines : [logsData];
+      }
+      
+      // Handle object logs (complex structured data)
+      if (typeof logsData === 'object' && logsData !== null) {
+        // Check if it's a response object with data property
+        if (logsData.success && logsData.data) {
+          return processLogData(logsData.data);
+        }
+        
+        // Check if it has a raw property (common in API responses)
+        if (logsData.raw) {
+          return processLogData(logsData.raw);
+        }
+        
+        // If it's a complex object, try to format it nicely
+        if (logsData.data && typeof logsData.data === 'object') {
+          const formatted = JSON.stringify(logsData.data, null, 2);
+          return formatted.split('\n');
+        }
+        
+        // Fallback: stringify the entire object
+        const formatted = JSON.stringify(logsData, null, 2);
+        return formatted.split('\n');
+      }
+      
+      // Fallback for any other type
+      return [String(logsData)];
+    } catch (error) {
+      console.error('Error processing log data:', error);
+      return [`Error processing logs: ${error instanceof Error ? error.message : 'Unknown error'}`];
+    }
+  };
+
   const fetchLogs = async () => {
     if (!pod?.metadata?.name || !selectedContainer) return;
 
@@ -82,15 +137,9 @@ const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace: podNamespace }) =
         false // logTimeframe should be boolean for follow parameter
       );
 
-      if (Array.isArray(logsData)) {
-        setLogs(logsData);
-      } else if (typeof logsData === 'string') {
-        // If logs data is a string, split by lines
-        const logLines = (logsData as string).split('\n').filter(Boolean);
-        setLogs(logLines.length > 0 ? logLines : [logsData]);
-      } else {
-        setLogs(['Unexpected log format received']);
-      }
+      const processedLogs = processLogData(logsData);
+      setLogs(processedLogs);
+      
     } catch (error: any) {
       console.error('Error fetching logs:', error);
       setLogs([`Error fetching logs: ${error.message || 'Unknown error'}`]);
@@ -114,8 +163,9 @@ const PodDetail: React.FC<PodDetailProps> = ({ pod, namespace: podNamespace }) =
       namespace,
       selectedContainer,
       (logChunk: string) => {
-        // Add new log chunk to the logs array
-        setLogs((prev) => [...prev, logChunk]);
+        // Process the log chunk before adding it
+        const processedChunk = processLogData(logChunk);
+        setLogs((prev) => [...prev, ...processedChunk]);
       },
       (error: Error) => {
         console.error('Streaming error:', error);

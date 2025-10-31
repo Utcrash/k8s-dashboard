@@ -43,6 +43,7 @@ const LogViewer: React.FC<LogViewerProps> = ({
   const [autoScroll, setAutoScroll] = useState(true);
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
   const [caseSensitive, setCaseSensitive] = useState(false);
+  const [jsonFormatting, setJsonFormatting] = useState(true);
   const logContainerRef = useRef<HTMLDivElement>(null);
   const matchRefs = useRef<(HTMLSpanElement | null)[]>([]);
 
@@ -167,8 +168,57 @@ const LogViewer: React.FC<LogViewerProps> = ({
     }
   };
 
+  // Detect if a log line is JSON
+  const isJsonLine = (text: string): boolean => {
+    const trimmed = text.trim();
+    return (trimmed.startsWith('{') && trimmed.endsWith('}')) || 
+           (trimmed.startsWith('[') && trimmed.endsWith(']'));
+  };
+
+  // Format JSON with basic syntax highlighting
+  const formatJsonLine = (text: string): React.ReactNode => {
+    try {
+      const parsed = JSON.parse(text);
+      const formatted = JSON.stringify(parsed, null, 2);
+      
+      // Basic JSON syntax highlighting
+      return formatted.split('\n').map((line, i) => (
+        <div key={i} style={{ marginLeft: `${(line.match(/^ */)?.[0]?.length || 0) * 8}px` }}>
+          {line.replace(/^ +/, '').split('').map((char, j) => {
+            let color = '#d4d4d4'; // Default text color
+            
+            if (char === '"' || char === "'") color = '#ce9178'; // String quotes
+            else if (char === '{' || char === '}' || char === '[' || char === ']') color = '#569cd6'; // Brackets
+            else if (char === ':' || char === ',') color = '#d4d4d4'; // Punctuation
+            else if (/\d/.test(char)) color = '#b5cea8'; // Numbers
+            else if (char === 't' || char === 'f' || char === 'n') {
+              // Check for boolean/null values
+              const remaining = line.slice(j);
+              if (remaining.startsWith('true') || remaining.startsWith('false') || remaining.startsWith('null')) {
+                color = '#569cd6';
+              }
+            }
+            
+            return (
+              <span key={j} style={{ color }}>
+                {char}
+              </span>
+            );
+          })}
+        </div>
+      ));
+    } catch {
+      return text;
+    }
+  };
+
   // Highlight matching text with current match tracking
   const highlightText = (text: string, logIndex: number): React.ReactNode => {
+    // First check if we should format as JSON
+    if (isJsonLine(text) && !searchTerm && jsonFormatting) {
+      return formatJsonLine(text);
+    }
+
     if (!searchTerm) return text;
 
     const flags = caseSensitive ? 'g' : 'gi';

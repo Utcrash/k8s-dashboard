@@ -46,8 +46,8 @@ function MainLink({ icon: Icon, label, path, cssClass }: MainLinkProps) {
 }
 
 const mainLinks = [
-  { icon: IconRocket, label: 'Deployments', path: '/deployments', cssClass: 'nav-link-deployments' },
   { icon: IconBox, label: 'Pods', path: '/pods', cssClass: 'nav-link-pods' },
+  { icon: IconRocket, label: 'Deployments', path: '/deployments', cssClass: 'nav-link-deployments' },
   { icon: IconServer, label: 'Services', path: '/services', cssClass: 'nav-link-services' },
   { icon: IconFiles, label: 'ConfigMaps', path: '/configmaps', cssClass: 'nav-link-configmaps' },
   { icon: IconUsers, label: 'ServiceAccounts', path: '/serviceaccounts', cssClass: 'nav-link-serviceaccounts' },
