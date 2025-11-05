@@ -158,43 +158,109 @@ k8s-dashboard/
 
 ## 🐳 Docker Deployment
 
-### Traditional Deployment (Direct Mode)
+### 1. Docker Build Command
+
+Build both frontend and backend images with one command:
 
 ```bash
-# Build and run
-docker build -t k8s-dashboard .
-docker run -d -p 80:80 k8s-dashboard
+# Build both images
+docker build -t k8s-dashboard-frontend:latest . && \
+docker build -t k8s-dashboard-backend:latest ./backend
 ```
 
-### Multi-Service Deployment (SSH Mode)
+### 2. Nginx Configuration
 
-Create `docker-compose.yml`:
+Add these location blocks to your existing nginx configuration:
 
-```yaml
+```nginx
+# K8s Dashboard Frontend
+location /k8s/ {
+    proxy_pass http://localhost:9091/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+# K8s Dashboard Backend API
+location /k8s-api/ {
+    proxy_pass http://localhost:3001/api/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_read_timeout 300s;
+    proxy_connect_timeout 75s;
+}
+```
+
+**Note:** The frontend container serves the React app from `/k8s` path, so requests to `/k8s/` are proxied to the container root where the app handles routing.
+
+### 3. Docker Run Command
+
+Start both frontend and backend with Docker Compose:
+
+```bash
+# Create docker-compose.yml and start everything
+cat > docker-compose.yml << 'EOF'
 version: '3.8'
 services:
+  mongodb:
+    image: mongo:7
+    container_name: k8s-dashboard-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: dnio-k8s-dashboard
+
   backend:
-    build: ./backend
+    image: k8s-dashboard-backend:latest
+    container_name: k8s-dashboard-backend
+    restart: unless-stopped
     ports:
       - "3001:3001"
+    depends_on:
+      - mongodb
     environment:
-      - NODE_ENV=production
-      - FRONTEND_URL=http://localhost:3000
-    volumes:
-      - ./backend/.env:/app/.env
+      NODE_ENV: production
+      PORT: 3001
+      FRONTEND_URL: http://localhost:9091
+      MONGODB_CONNECTION_STRING: mongodb://mongodb:27017/dnio-k8s-dashboard
+      SSH_TIMEOUT: 30000
+      MAX_CONNECTIONS: 10
+      JWT_SECRET: change-this-secret-in-production
 
   frontend:
-    build: .
+    image: k8s-dashboard-frontend:latest
+    container_name: k8s-dashboard-frontend
+    restart: unless-stopped
     ports:
-      - "3000:80"
-    environment:
-      - REACT_APP_BACKEND_URL=http://localhost:3001/api
+      - "9091:80"
     depends_on:
       - backend
+    environment:
+      REACT_APP_BACKEND_URL: http://localhost:3001/api
+      REACT_APP_K8S_NAMESPACE: default
+
+volumes:
+  mongodb_data:
+EOF
+
+# Start all services
+docker-compose up -d
 ```
 
+**Alternative single command (without compose file):**
+
 ```bash
-docker-compose up -d
+# Start all containers in one command
+docker network create k8s-dashboard-net 2>/dev/null || true && \
+docker run -d --name k8s-dashboard-mongodb --network k8s-dashboard-net --restart unless-stopped -v k8s-dashboard-mongo-data:/data/db -e MONGO_INITDB_DATABASE=dnio-k8s-dashboard mongo:7 && \
+docker run -d --name k8s-dashboard-backend --network k8s-dashboard-net --restart unless-stopped -p 3001:3001 -e NODE_ENV=production -e PORT=3001 -e FRONTEND_URL=http://localhost:9091 -e MONGODB_CONNECTION_STRING=mongodb://k8s-dashboard-mongodb:27017/dnio-k8s-dashboard -e SSH_TIMEOUT=30000 -e MAX_CONNECTIONS=10 -e JWT_SECRET=change-this-secret-in-production k8s-dashboard-backend:latest && \
+docker run -d --name k8s-dashboard-frontend --network k8s-dashboard-net --restart unless-stopped -p 9091:80 -e REACT_APP_BACKEND_URL=http://localhost:3001/api -e REACT_APP_K8S_NAMESPACE=default k8s-dashboard-frontend:latest
 ```
 
 ## 🔒 Security Considerations

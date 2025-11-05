@@ -35,9 +35,18 @@ function MainLink({ icon: Icon, label, path, cssClass }: MainLinkProps) {
     <NavLink
       to={fullPath}
       className={({ isActive }) => `nav-link ${cssClass} ${isActive ? 'active' : ''}`}
-      style={{ textDecoration: 'none' }}
+      style={{ 
+        textDecoration: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        width: 'auto', // Changed from '100%' to 'auto'
+        cursor: 'pointer',
+        userSelect: 'none',
+        flexShrink: 0, // Prevent shrinking
+        whiteSpace: 'nowrap' // Prevent text wrapping
+      }}
     >
-      <Group gap="xs">
+      <Group gap="xs" style={{ pointerEvents: 'none' }}>
         <Icon size={18} />
         <Text size="sm">{label}</Text>
       </Group>
@@ -72,7 +81,14 @@ export default function Sidebar() {
       }}
     >
       <ScrollArea style={{ flex: 1 }} type="never">
-        <Group gap="xs" px="md" style={{ height: '60px', alignItems: 'center' }}>
+        <Group gap="md" px="md" style={{ 
+          height: '60px', 
+          alignItems: 'center',
+          display: 'flex',
+          flexDirection: 'row',
+          flexWrap: 'nowrap',
+          justifyContent: 'flex-start'
+        }}>
           {mainItems}
         </Group>
       </ScrollArea>

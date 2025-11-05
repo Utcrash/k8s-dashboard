@@ -143,6 +143,12 @@ html {
   font-weight: 500;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   margin-right: 6px;
+  cursor: pointer;
+  user-select: none;
+  min-height: 40px;
+  width: auto;
+  flex-shrink: 0;
+  box-sizing: border-box;
   white-space: nowrap;
   height: 42px;
   border: 2px solid transparent;
